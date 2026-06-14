@@ -1,0 +1,28 @@
+{
+  "name": "feishu-next",
+  "description": "A local Codex marketplace for installing Feishu Next, a plugin-first Feishu/Lark lark-cli router and workflow skill pack.",
+  "owner": {
+    "name": "Sky"
+  },
+  "interface": {
+    "displayName": "Feishu Next"
+  },
+  "plugins": [
+    {
+      "name": "feishu-next",
+      "description": "Installable Codex plugin replacing standalone Feishu guide skills with marketplace-discovered routing, official lark-* runtime reminders, read-only document export, document asset mapping, IM chat archiving, and whiteboard/draw.io operations.",
+      "author": {
+        "name": "Sky"
+      },
+      "source": {
+        "source": "local",
+        "path": "./plugins/feishu-next"
+      },
+      "policy": {
+        "installation": "AVAILABLE",
+        "authentication": "ON_INSTALL"
+      },
+      "category": "Productivity"
+    }
+  ]
+}

@@ -1,0 +1,8 @@
+interface:
+  display_name: "Feishu IM Chat Archive"
+  short_description: "Archive Feishu chat history with evidence."
+  brand_color: "#00B96B"
+  default_prompt: "Use $feishu-next:feishu-im-chat-archive to archive this Feishu chat."
+
+policy:
+  allow_implicit_invocation: true

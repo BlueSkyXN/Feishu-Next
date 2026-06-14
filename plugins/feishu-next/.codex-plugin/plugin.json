@@ -1,0 +1,38 @@
+{
+  "name": "feishu-next",
+  "version": "0.1.0+codex.20260614083238",
+  "description": "Reusable Codex skills for common Feishu/Lark workflows powered by the official lark-cli.",
+  "author": {
+    "name": "Sky"
+  },
+  "keywords": [
+    "codex",
+    "skills",
+    "feishu",
+    "lark",
+    "workflow",
+    "lark-cli"
+  ],
+  "skills": "./skills/",
+  "interface": {
+    "displayName": "Feishu Next",
+    "shortDescription": "Plugin-first Feishu workflow router and skills for Codex.",
+    "longDescription": "Feishu Next packages the plugin-first replacement for standalone Feishu lark-cli guide skills plus reusable Codex workflows. It routes Feishu/Lark tasks to the current official lark-cli embedded lark-* skills without vendoring them, then hands stateful work to bundled sub-skills for read-only document export, document asset mapping, IM chat archiving, and whiteboard edit/recovery or draw.io publishing loops with evidence-preserving outputs.",
+    "developerName": "Sky",
+    "category": "Productivity",
+    "capabilities": [
+      "Skills",
+      "Workflow",
+      "lark-cli",
+      "Whiteboards",
+      "draw.io"
+    ],
+    "defaultPrompt": [
+      "Use $feishu-next:feishu-workflow-router to route this Feishu/Lark lark-cli task and decide which official lark-* skill or Feishu Next sub-skill applies.",
+      "Use $feishu-next:feishu-readonly-doc-export to export this document.",
+      "Use $feishu-next:feishu-im-chat-archive to archive this chat.",
+      "Use $feishu-next:feishu-whiteboard-ops to update or sync this Feishu whiteboard."
+    ],
+    "brandColor": "#00B96B"
+  }
+}

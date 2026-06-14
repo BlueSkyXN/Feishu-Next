@@ -1,0 +1,8 @@
+interface:
+  display_name: "Feishu Read-only Export"
+  short_description: "Export Feishu documents without edits."
+  brand_color: "#00B96B"
+  default_prompt: "Use $feishu-next:feishu-readonly-doc-export to export this Feishu document."
+
+policy:
+  allow_implicit_invocation: true

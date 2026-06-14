@@ -1,0 +1,8 @@
+interface:
+  display_name: "Feishu Whiteboard Ops"
+  short_description: "Edit and sync Feishu whiteboards safely."
+  brand_color: "#00B96B"
+  default_prompt: "Use $feishu-next:feishu-whiteboard-ops to update or sync this Feishu whiteboard."
+
+policy:
+  allow_implicit_invocation: true

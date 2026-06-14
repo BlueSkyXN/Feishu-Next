@@ -1,0 +1,8 @@
+interface:
+  display_name: "Feishu Document Asset Map"
+  short_description: "Inventory document assets and embeds."
+  brand_color: "#00B96B"
+  default_prompt: "Use $feishu-next:feishu-doc-asset-map to map assets in this Feishu document."
+
+policy:
+  allow_implicit_invocation: true

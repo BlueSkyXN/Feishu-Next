@@ -1,0 +1,281 @@
+---
+name: feishu-whiteboard-ops
+description: Operate Feishu/Lark document whiteboards safely with lark-cli. Use when the user asks to view, inspect, modify, redraw, replace, clean up, validate, or recover a whiteboard embedded in a Feishu doc/docx/wiki document, and when syncing a local .drawio / diagrams.net source diagram to an editable Feishu whiteboard while preserving source-of-truth and rollback discipline.
+---
+
+# Feishu whiteboard ops
+
+Use this workflow for Feishu whiteboards embedded in cloud documents. It is for
+read/preview/edit/verify loops, not for document text editing, Drive
+permissions, or publishing.
+
+The runtime truth is the installed `lark-cli` and its embedded skills.
+
+## Official skill relationship
+
+Combine this skill with official runtime skills by responsibility:
+
+| Source | Primary responsibility |
+| --- | --- |
+| `lark-whiteboard` | current whiteboard commands, flags, input formats, write risk, scopes, API behavior |
+| `lark-doc` | document fetch behavior, block IDs, section/range scope, whiteboard token extraction |
+| `lark-shared` | identity, auth, permission errors, confirmation gates, file-path safety |
+| `feishu-whiteboard-ops` | target discipline, backup baseline, drawing mode choice, local render/check, merge/write strategy, post-write verification |
+
+Before choosing command flags or writing, read the relevant official skill
+listed above. When official runtime guidance differs from this document on
+command syntax or supported parameters, follow the official skill. Keep this
+skill's backup, rollback, and validation gates around those official commands.
+
+## Required runtime reads
+
+Start with:
+
+```bash
+command -v lark-cli
+lark-cli --version
+lark-cli skills read lark-shared
+lark-cli skills read lark-whiteboard
+lark-cli skills read lark-whiteboard references/lark-whiteboard-query.md
+lark-cli skills read lark-whiteboard references/lark-whiteboard-update.md
+npx -y @larksuite/whiteboard-cli@^0.2.11 -v
+```
+
+If the user gives a document URL or says "the first/second whiteboard", also
+read:
+
+```bash
+lark-cli skills read lark-doc
+lark-cli skills read lark-doc references/lark-doc-fetch.md
+```
+
+If a `.drawio` or diagrams.net source file is involved, read
+`references/drawio-pipeline.md` before designing or writing. If a local `drawio`
+skill is available, read it before editing/exporting `.drawio` files.
+
+## Mode routing
+
+Keep one Feishu Next whiteboard skill. Do not create or route to a separate
+Feishu-specific draw.io skill inside this plugin. Use this split:
+
+| Signal | Action |
+| --- | --- |
+| Query/export one existing board | Use official `lark-whiteboard` command directly after reading its runtime skill |
+| Modify/redraw/recover a document whiteboard | Use this SKILL.md main workflow |
+| `.drawio`, diagrams.net, local master, publish, sync, or reverse reconciliation | Read `references/drawio-pipeline.md`, then continue through this skill |
+| Need to author or deeply edit `.drawio` itself | Read the local `drawio` skill if available; keep Feishu write-back in this skill |
+
+## Source-of-truth model
+
+Keep these roles separate:
+
+- Content source: owns business wording, scope, and factual changes.
+- `.drawio` master: owns durable layout, geometry, grouping, and visual design
+  when the user has a local diagram source.
+- Feishu whiteboard: owns collaborative review and embedded document display.
+- Feishu raw export: backup and diagnostics, not the long-term editable source.
+
+Unless the user says otherwise, resolve conflicts in this order: latest explicit
+user instruction, content source, `.drawio` master, Feishu raw/image export,
+then secondary references.
+
+## Resolve the target
+
+Use `--as user` by default for whiteboards in user-visible documents.
+
+For a document URL, fetch the local section or full document with IDs and
+extract `<whiteboard token="...">` in document order:
+
+```bash
+lark-cli docs +fetch \
+  --api-version v2 \
+  --as user \
+  --doc '<doc-url-or-token>' \
+  --detail with-ids \
+  --doc-format xml \
+  --format json
+```
+
+When the user distinguishes "old version", "draft", "first", "second", or
+refers to a chapter, fetch the outline/section first and name the exact block
+ID and whiteboard token before editing.
+
+## Always create a rollback baseline
+
+Before any write, create a timestamped local work directory and capture image +
+raw + code when available:
+
+```bash
+mkdir -p ./whiteboard-work/<timestamp>
+
+lark-cli whiteboard +query \
+  --as user \
+  --whiteboard-token '<token>' \
+  --output_as image \
+  --output ./whiteboard-work/<timestamp>/before \
+  --overwrite \
+  --format json
+
+lark-cli whiteboard +query \
+  --as user \
+  --whiteboard-token '<token>' \
+  --output_as raw \
+  --output ./whiteboard-work/<timestamp>/before.raw.json \
+  --overwrite \
+  --format json
+
+lark-cli whiteboard +query \
+  --as user \
+  --whiteboard-token '<token>' \
+  --output_as code \
+  --format json
+```
+
+Treat `before.raw.json` as the source of truth for recovery and final merge.
+Do not use a later, already-contaminated online board state as the merge base
+after a mistaken write.
+
+## Choose the edit mode
+
+Match the user's intended abstraction level before drawing:
+
+| User wording | Preferred drawing style |
+| --- | --- |
+| "解释一下", "定义/适用场景/例子" | explanatory cards or table-like blocks |
+| "把名字填进去", "全景图", "看看下面怎么画的" | structural panorama: containers and module names only |
+| "流程", "步骤", "输入输出" | workflow diagram with lanes or sequence blocks |
+| "像原图/下面一样" | copy the current board's visual grammar: container labels, rounded module blocks, color, line weight, and text density |
+
+For existing boards, inspect the preview before designing. Preserve the local
+visual grammar unless the user explicitly asks for a redesign.
+
+When a local `.drawio` master exists, do not let ad hoc Feishu edits become a
+second independent source. Treat manual Feishu changes as review input, apply
+accepted changes back to the content source or `.drawio`, then republish.
+
+## Build and check new nodes
+
+For structure/panorama changes, create a small SVG that contains only the new
+or replacement region. Keep text concise and use the same granularity as nearby
+nodes.
+
+For draw.io-sourced boards, prefer draw.io/DSL -> `whiteboard-cli` -> OpenAPI
+over hand-mutating large exported raw payloads. Use raw JSON edits only for
+narrow text/color changes after a baseline exists.
+
+Render and check locally:
+
+```bash
+npx -y @larksuite/whiteboard-cli@^0.2.11 \
+  -i ./whiteboard-work/<timestamp>/diagram.svg \
+  -o ./whiteboard-work/<timestamp>/diagram.png \
+  -f svg
+
+npx -y @larksuite/whiteboard-cli@^0.2.11 \
+  -i ./whiteboard-work/<timestamp>/diagram.svg \
+  -f svg \
+  --check
+```
+
+Do not write if `--check` reports text overflow, node overlap, or text
+occlusion. Also visually inspect the PNG; passing `--check` does not prove the
+semantic level or style is right.
+
+Convert checked SVG to OpenAPI nodes:
+
+```bash
+npx -y @larksuite/whiteboard-cli@^0.2.11 \
+  -i ./whiteboard-work/<timestamp>/diagram.svg \
+  --to openapi \
+  --format json \
+  -o ./whiteboard-work/<timestamp>/diagram.json
+```
+
+## Write strategy
+
+Use additive writes only when the user wants to add nodes and there is no need
+to remove prior content:
+
+```bash
+lark-cli whiteboard +update \
+  --as user \
+  --whiteboard-token '<token>' \
+  --source @./whiteboard-work/<timestamp>/diagram.json \
+  --input_format raw \
+  --idempotent-token '<10+-char-token>' \
+  --format json
+```
+
+Use overwrite when cleaning up a mistaken update or ensuring the final board
+equals a known baseline plus intended nodes.
+
+When replacing a region, do not blindly append new nodes to `before.raw.json`.
+First decide which old nodes in that region should survive:
+
+- Keep background containers or title frames only when they still define the
+  intended layout.
+- Remove stale content nodes inside the replacement bounds, or they will
+  remain after `--overwrite`.
+- If unsure which nodes belong to the region, inspect `before.raw.json` by
+  `x/y/width/height` and visible text before merging.
+
+Then merge the filtered baseline and generated nodes:
+
+```bash
+jq -s '{nodes: (.[0].nodes + .[1].nodes)}' \
+  ./whiteboard-work/<timestamp>/baseline.filtered.json \
+  ./whiteboard-work/<timestamp>/diagram.json \
+  > ./whiteboard-work/<timestamp>/merged.json
+
+lark-cli whiteboard +update \
+  --as user \
+  --whiteboard-token '<token>' \
+  --source @./whiteboard-work/<timestamp>/merged.json \
+  --input_format raw \
+  --idempotent-token '<10+-char-token>' \
+  --overwrite \
+  --format json
+```
+
+If only simple existing text or color needs changing, raw JSON patching is
+acceptable after inspecting the raw structure. For layout or abstraction
+changes, prefer generating checked nodes and merging with the baseline.
+
+Do not write exported connector compatibility fields such as `start_object` or
+`end_object` back into create/update payloads. When constructing connectors,
+use `connector.start` and `connector.end`.
+
+## Verify after writing
+
+Always export the updated preview:
+
+```bash
+lark-cli whiteboard +query \
+  --as user \
+  --whiteboard-token '<token>' \
+  --output_as image \
+  --output ./whiteboard-work/<timestamp>/after \
+  --overwrite \
+  --format json
+```
+
+Inspect the image before reporting success. Confirm:
+
+- target board is the intended one
+- wrong intermediate content is gone
+- new content matches the user's requested abstraction level
+- text fits and does not overlap
+- unchanged regions stayed intact
+
+## Safety and response
+
+- Whiteboard update is a write operation. If the request is ambiguous, dry-run
+  or ask before writing. If the user clearly asks to modify the board, proceed
+  with the bounded target.
+- Do not move/delete documents, change permissions, publish, or add `--yes`
+  unless the user explicitly approves that separate action.
+- Keep generated raw JSON, previews, and downloaded images local by default;
+  they may contain private document structure, tokens, names, or internal text.
+- Use relative paths for `lark-cli` file arguments.
+- In the final response, summarize the target, identity, whether the write was
+  additive or overwrite, validation performed, and the final preview path.
