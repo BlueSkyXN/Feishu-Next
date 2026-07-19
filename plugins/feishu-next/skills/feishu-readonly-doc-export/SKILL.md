@@ -18,7 +18,8 @@ lark-cli skills read lark-drive
 lark-cli skills read lark-drive references/lark-drive-export.md
 ```
 
-If the input is a Wiki URL or the type is unclear, also read:
+If the input is a bare token, its type is unclear, or the user needs explicit
+resolution evidence, also read:
 
 ```bash
 lark-cli skills read lark-drive references/lark-drive-inspect.md
@@ -33,14 +34,22 @@ lark-cli skills read lark-drive references/lark-drive-inspect.md
    lark-cli --version
    ```
 
-2. Inspect URLs before export, especially `/wiki/`:
+2. Choose the input form without manually parsing URLs:
+
+   - Prefer `--url` when the user provides a URL. The current shortcut infers
+     the type and token; Wiki URLs are unwrapped automatically.
+   - For a bare token, pass `--doc-type` explicitly.
+   - For a bare Wiki node token, use `--doc-type wiki` so the CLI unwraps the
+     underlying object.
+   - Use `+inspect` only when the type is unclear, the token source is
+     questionable, or the final evidence needs canonical type/title/token:
 
    ```bash
    lark-cli drive +inspect --url '<feishu-url>' --format json
    ```
 
-   Use the returned canonical `type` and `token`. For Wiki resources, export
-   the unwrapped underlying object, not the `wiki` node token.
+   Do not manually split a Wiki URL or pass a Wiki node token as if it were the
+   underlying `docx`, `sheet`, or `bitable` token.
 
 3. Select the format:
 
@@ -49,7 +58,7 @@ lark-cli skills read lark-drive references/lark-drive-inspect.md
    | `docx` | `pdf`, `docx`, `markdown` |
    | `doc` | `pdf`, `docx` |
    | `sheet` | `xlsx`, `csv` with `--sub-id` |
-   | `bitable` | `xlsx`, `csv` with `--sub-id`, `base` |
+   | `bitable` | `xlsx`, `csv` with `--sub-id`, `base`; add `--only-schema` for a schema-only `.base` snapshot |
    | `slides` | `pptx`, `pdf` |
 
 4. Choose identity and paths deliberately:
@@ -61,13 +70,34 @@ lark-cli skills read lark-drive references/lark-drive-inspect.md
    - Use relative output paths under the current working directory. `lark-cli`
      rejects unsafe absolute file paths for file operations.
 
-5. Export with a bounded local output directory:
+5. Export a URL directly with a bounded local output directory:
+
+   ```bash
+   lark-cli drive +export \
+     --url '<FEISHU_OR_LARK_URL>' \
+     --file-extension '<pdf|docx|markdown|xlsx|csv|base|pptx>' \
+     --output-dir './exports' \
+     --format json
+   ```
+
+   For a bare token, use the explicit fallback:
 
    ```bash
    lark-cli drive +export \
      --token '<TOKEN>' \
-     --doc-type '<doc|docx|sheet|bitable|slides>' \
+     --doc-type '<doc|docx|sheet|bitable|slides|wiki>' \
      --file-extension '<pdf|docx|markdown|xlsx|csv|base|pptx>' \
+     --output-dir './exports' \
+     --format json
+   ```
+
+   For a bitable schema-only snapshot:
+
+   ```bash
+   lark-cli drive +export \
+     --url '<BITABLE_URL>' \
+     --file-extension base \
+     --only-schema \
      --output-dir './exports' \
      --format json
    ```
@@ -97,6 +127,7 @@ For every export, keep these fields in the final summary:
 - source URL or token type, redacted if private
 - resolved `doc-type`
 - output extension
+- whether a bitable `.base` export included data or used `--only-schema`
 - local output path
 - whether export completed immediately or required `ticket` continuation
 - any permission or scope errors and the exact missing scope when available

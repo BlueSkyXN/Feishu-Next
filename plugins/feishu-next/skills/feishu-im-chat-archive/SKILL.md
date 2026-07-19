@@ -19,8 +19,10 @@ lark-cli skills read lark-im
 Pick the matching reference before running commands:
 
 ```bash
+lark-cli skills read lark-im references/lark-im-chat-search.md
 lark-cli skills read lark-im references/lark-im-chat-messages-list.md
 lark-cli skills read lark-im references/lark-im-messages-search.md
+lark-cli skills read lark-im references/lark-im-threads-messages-list.md
 ```
 
 If downloading files/images from messages:
@@ -102,6 +104,17 @@ lark-cli skills read lark-im references/lark-im-messages-resources-download.md
 7. Save generated archive files under `./chat-archives/` when a local artifact
    is requested. Treat raw message JSON, downloaded resources, and summaries as
    private by default.
+
+## Machine-readable result handling
+
+- Treat a command as successful only when the process exits with code `0` and
+  the JSON envelope has `ok == true`.
+- Do not test the legacy condition `code == 0`; successful typed envelopes do
+  not have a top-level `code` field.
+- For nonzero exits, read the structured `error.type`, `error.subtype`, `hint`,
+  and permission fields before deciding whether to retry, request scope, or
+  stop. Never discard a successfully archived page because a later page or one
+  resource download failed.
 
 ## Evidence to preserve
 

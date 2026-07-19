@@ -6,6 +6,11 @@ guidance on top of the current `lark-cli` runtime so Codex can execute common
 multi-step Feishu tasks with the right identity, permissions, pagination,
 export, and evidence boundaries.
 
+Feishu Next `0.2.0` is validated against `lark-cli 1.0.72`. It does not hard
+lock that exact version: the router and runtime validator inspect the installed
+skills, domain help, shortcut help, and required flags before relying on a
+capability.
+
 ## Plugin-First Migration
 
 Feishu Next is the plugin replacement for keeping Feishu routing guidance as a
@@ -23,7 +28,9 @@ current API behavior, and confirmation rules.
 
 - `feishu-workflow-router`: entrypoint for routing Feishu tasks to the right
   official `lark-*` skill or bundled workflow; use it instead of a standalone
-  `lark-cli-guide` in plugin-based Codex sessions.
+  `lark-cli-guide` in plugin-based Codex sessions. It also handles runtime
+  domains without an embedded skill, such as Open Platform `application` slash
+  commands, by reading current domain and shortcut help.
 - `feishu-readonly-doc-export`: read-only export workflow for doc/docx, sheet,
   bitable, and slides resources.
 - `feishu-doc-asset-map`: document asset inventory workflow for images, files,
@@ -66,8 +73,13 @@ When a workflow needs Feishu access, follow the current embedded runtime rules:
 ```bash
 lark-cli skills read lark-shared
 lark-cli skills read <lark-domain-skill>
-lark-cli auth status
+lark-cli whoami
+lark-cli auth status --json --verify
 ```
+
+Use `lark-cli doctor --offline` only when diagnosing local configuration or
+runtime health. An older or newer CLI is acceptable when the required runtime
+surface passes `python3 scripts/validate_lark_runtime.py`.
 
 ## Package Layout
 
@@ -103,6 +115,15 @@ Run the first two commands when you only want to confirm marketplace visibility.
 Run `codex plugin add` when you want to install the plugin into the current
 Codex environment.
 
+When replacing an already installed version, refresh the independent plugin
+cache and then verify the installed manifest:
+
+```bash
+codex plugin remove feishu-next@feishu-next --json
+codex plugin add feishu-next@feishu-next --json
+codex plugin list --json
+```
+
 After installation, start with:
 
 ```text
@@ -117,6 +138,8 @@ been reinstalled in the Codex environment you are using.
 ## Safety Model
 
 - Prefer read-only commands and `--dry-run` before writes.
+- Always run the exact prepared whiteboard update with `--dry-run` before any
+  additive or overwrite write; clear user intent does not waive payload preflight.
 - Use the current `lark-cli skills read ...` output as the runtime truth.
 - Do not expose app secrets, access tokens, private URLs, or private document
   contents in public artifacts.
@@ -129,8 +152,21 @@ From the repository root:
 
 ```bash
 python3 scripts/validate_project.py
+python3 scripts/validate_lark_runtime.py
+make validate-all
 ```
 
-The project validator checks marketplace wiring, plugin manifest structure,
-expected skill surface, text hygiene, and the Codex plugin/skill validators when
-they are available locally.
+The project validator checks marketplace wiring, manifest structure, expected
+skill surface, text hygiene, and Codex plugin/skill validators. The separate
+runtime validator performs local-only `lark-cli skills read` and `--help`
+probes; it does not authenticate, call Feishu APIs, or mutate remote resources.
+
+Release validation requires the Codex plugin and skill validators to be
+installed. For a deliberately degraded static-only inspection on another
+machine, use:
+
+```bash
+python3 scripts/validate_project.py --allow-missing-codex-validators
+```
+
+Do not use that option for release checks.

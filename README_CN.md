@@ -10,6 +10,10 @@ plugin package -> marketplace install -> skill workflow
 它不是另一个飞书 OpenAPI SDK，也不复制官方 `lark-cli` 内置 skills。它的定位是把常见的
 跨步骤飞书任务沉淀为可复用 Codex Skills，并始终以当前安装的 `lark-cli` 作为运行时真相源。
 
+`Feishu Next 0.2.0` 已使用 `lark-cli 1.0.72` 验证，但不硬锁这个精确版本。router
+会动态读取当前 skills、domain help、shortcut help 和 flags；旧版或新版 CLI
+只要核心 runtime surface 校验通过即可使用。
+
 ## 迁移定位
 
 `Feishu Next` 是插件化后的 Feishu 入口层，用来替代把 Feishu guide 单独放在
@@ -24,6 +28,8 @@ plugin package -> marketplace install -> skill workflow
 ## 适合做什么
 
 - 路由飞书任务到正确的官方 `lark-*` skill。
+- 路由原生 Markdown、思维笔记、审批、Miaoda/Spark、应用 slash commands、
+  会中能力和官方 meeting/standup workflows。
 - 只读导出飞书文档、表格、多维表格和幻灯片。
 - 盘点飞书文档中的图片、附件、画板和嵌入资源。
 - 归档飞书 IM 聊天记录、消息搜索结果、线程和资源。
@@ -87,14 +93,21 @@ lark-cli skills list
 ```bash
 lark-cli skills read lark-shared
 lark-cli skills read <lark-domain-skill>
+lark-cli whoami
+lark-cli auth status --json --verify
 ```
+
+只有诊断本地配置或 runtime 健康状态时才运行 `lark-cli doctor --offline`。
+像 `application` 这样没有独立 embedded skill 的 domain，以当前
+`lark-cli application --help` 和 shortcut help 为准，不猜造 skill 名称。
 
 ## 设计边界
 
 - 插件只打包 reusable skills，不打包本机 token、应用密钥、私有文档内容或运行时配置。
 - 写入、删除、发送消息、权限变更、发布和 `--yes` 操作不在默认路径里，必须单独确认。
 - `feishu-*` skills 是组合工作流层；具体 API 细节优先读取官方 `lark-*` skills。
-- 遇到 CLI 未覆盖能力时，先读 `lark-openapi-explorer`，再通过 `lark-cli api` 裸调。
+- 遇到没有 matching skill 的能力时，先检查 domain/shortcut help；正式 command
+  也不存在时，再读 `lark-openapi-explorer` 并通过 `schema` / `api` 探索。
 
 ## 首批 Skills
 
@@ -110,15 +123,24 @@ lark-cli skills read <lark-domain-skill>
 
 ```bash
 python3 scripts/validate_project.py
+python3 scripts/validate_lark_runtime.py
 ```
 
 或使用 Make：
 
 ```bash
 make validate
+make validate-runtime
+make validate-all
 ```
 
-底层会继续调用 Codex 的插件和 skill 校验器。需要单独验证时：
+`validate` 保持确定性的静态/plugin/skill 校验；`validate-runtime` 只执行本地
+`lark-cli skills read` 和 `--help` 探测，不认证、不调用飞书 API、不写远端资源；
+`validate-all` 顺序运行二者。静态校验底层会继续调用 Codex 的插件和 skill
+校验器；缺少这些 validator 时默认失败，避免发布门禁假绿。只做非发布态的
+降级静态检查时可显式运行
+`python3 scripts/validate_project.py --allow-missing-codex-validators`。
+需要单独验证时：
 
 ```bash
 python3 ~/.codex/skills/.system/plugin-creator/scripts/validate_plugin.py \

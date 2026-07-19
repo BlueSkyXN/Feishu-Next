@@ -17,7 +17,7 @@ Combine this skill with official runtime skills by responsibility:
 
 | Source | Primary responsibility |
 | --- | --- |
-| `lark-whiteboard` | current whiteboard commands, flags, input formats, write risk, scopes, API behavior |
+| `lark-whiteboard` and its workflow reference | current commands, supported edit/render routes, flags, input formats, write risk, scopes, API behavior |
 | `lark-doc` | document fetch behavior, block IDs, section/range scope, whiteboard token extraction |
 | `lark-shared` | identity, auth, permission errors, confirmation gates, file-path safety |
 | `feishu-whiteboard-ops` | target discipline, backup baseline, drawing mode choice, local render/check, merge/write strategy, post-write verification |
@@ -38,7 +38,8 @@ lark-cli skills read lark-shared
 lark-cli skills read lark-whiteboard
 lark-cli skills read lark-whiteboard references/lark-whiteboard-query.md
 lark-cli skills read lark-whiteboard references/lark-whiteboard-update.md
-npx -y @larksuite/whiteboard-cli@^0.2.11 -v
+lark-cli skills read lark-whiteboard references/lark-whiteboard-workflow.md
+npx -y @larksuite/whiteboard-cli@^0.2.12 -v
 ```
 
 If the user gives a document URL or says "the first/second whiteboard", also
@@ -88,7 +89,6 @@ extract `<whiteboard token="...">` in document order:
 
 ```bash
 lark-cli docs +fetch \
-  --api-version v2 \
   --as user \
   --doc '<doc-url-or-token>' \
   --detail with-ids \
@@ -128,8 +128,14 @@ lark-cli whiteboard +query \
   --as user \
   --whiteboard-token '<token>' \
   --output_as code \
+  --output ./whiteboard-work/<timestamp>/before.code \
+  --overwrite \
   --format json
 ```
+
+The CLI normalizes `before.code` to the discovered `.mmd` or `.puml`
+extension. If it reports no code block or multiple code blocks, record that
+result and keep `before.raw.json` as the recovery baseline.
 
 Treat `before.raw.json` as the source of truth for recovery and final merge.
 Do not use a later, already-contaminated online board state as the merge base
@@ -166,12 +172,12 @@ narrow text/color changes after a baseline exists.
 Render and check locally:
 
 ```bash
-npx -y @larksuite/whiteboard-cli@^0.2.11 \
+npx -y @larksuite/whiteboard-cli@^0.2.12 \
   -i ./whiteboard-work/<timestamp>/diagram.svg \
   -o ./whiteboard-work/<timestamp>/diagram.png \
   -f svg
 
-npx -y @larksuite/whiteboard-cli@^0.2.11 \
+npx -y @larksuite/whiteboard-cli@^0.2.12 \
   -i ./whiteboard-work/<timestamp>/diagram.svg \
   -f svg \
   --check
@@ -184,12 +190,24 @@ semantic level or style is right.
 Convert checked SVG to OpenAPI nodes:
 
 ```bash
-npx -y @larksuite/whiteboard-cli@^0.2.11 \
+npx -y @larksuite/whiteboard-cli@^0.2.12 \
   -i ./whiteboard-work/<timestamp>/diagram.svg \
   --to openapi \
   --format json \
   -o ./whiteboard-work/<timestamp>/diagram.json
 ```
+
+## Preflight every write
+
+Before every `whiteboard +update`, run the exact prepared command with
+`--dry-run`. Clear user intent authorizes the bounded write but does not waive
+payload preflight. Continue only when the process exits `0`, the envelope has
+`ok == true` and `dry_run == true`, the masked API target is the intended
+whiteboard, and `data.api[].body.overwrite` matches the chosen strategy. Stop if
+the parsed node list is unexpectedly empty or the source cannot be parsed.
+
+Use the same source file and idempotent token for the dry-run and real command;
+the only argument removed for the real write is `--dry-run`.
 
 ## Write strategy
 
@@ -197,6 +215,15 @@ Use additive writes only when the user wants to add nodes and there is no need
 to remove prior content:
 
 ```bash
+lark-cli whiteboard +update \
+  --as user \
+  --whiteboard-token '<token>' \
+  --source @./whiteboard-work/<timestamp>/diagram.json \
+  --input_format raw \
+  --idempotent-token '<10+-char-token>' \
+  --dry-run \
+  --format json
+
 lark-cli whiteboard +update \
   --as user \
   --whiteboard-token '<token>' \
@@ -226,6 +253,16 @@ jq -s '{nodes: (.[0].nodes + .[1].nodes)}' \
   ./whiteboard-work/<timestamp>/baseline.filtered.json \
   ./whiteboard-work/<timestamp>/diagram.json \
   > ./whiteboard-work/<timestamp>/merged.json
+
+lark-cli whiteboard +update \
+  --as user \
+  --whiteboard-token '<token>' \
+  --source @./whiteboard-work/<timestamp>/merged.json \
+  --input_format raw \
+  --idempotent-token '<10+-char-token>' \
+  --overwrite \
+  --dry-run \
+  --format json
 
 lark-cli whiteboard +update \
   --as user \
@@ -269,9 +306,9 @@ Inspect the image before reporting success. Confirm:
 
 ## Safety and response
 
-- Whiteboard update is a write operation. If the request is ambiguous, dry-run
-  or ask before writing. If the user clearly asks to modify the board, proceed
-  with the bounded target.
+- Whiteboard update is a write operation. If the request is ambiguous, ask
+  before writing. If the user clearly asks to modify the board, proceed with
+  the bounded target only after baseline, local checks, and mandatory dry-run.
 - Do not move/delete documents, change permissions, publish, or add `--yes`
   unless the user explicitly approves that separate action.
 - Keep generated raw JSON, previews, and downloaded images local by default;

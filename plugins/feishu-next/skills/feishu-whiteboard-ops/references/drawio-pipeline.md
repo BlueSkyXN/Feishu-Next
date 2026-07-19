@@ -128,15 +128,15 @@ lark-cli whiteboard +query \
 Render/check/convert a whiteboard-cli artifact:
 
 ```bash
-npx -y @larksuite/whiteboard-cli@^0.2.11 \
+npx -y @larksuite/whiteboard-cli@^0.2.12 \
   -i ./whiteboard-work/<timestamp>/diagram.json \
   -o ./whiteboard-work/<timestamp>/diagram.png
 
-npx -y @larksuite/whiteboard-cli@^0.2.11 \
+npx -y @larksuite/whiteboard-cli@^0.2.12 \
   -i ./whiteboard-work/<timestamp>/diagram.json \
   --check
 
-npx -y @larksuite/whiteboard-cli@^0.2.11 \
+npx -y @larksuite/whiteboard-cli@^0.2.12 \
   -i ./whiteboard-work/<timestamp>/diagram.json \
   --to openapi \
   --format json \

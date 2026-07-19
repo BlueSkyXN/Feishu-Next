@@ -1,6 +1,6 @@
 ---
 name: feishu-doc-asset-map
-description: Build an evidence-backed asset map for a Feishu/Lark document. Use when the user wants to inventory document images, attachments, whiteboards, embedded Sheets/Base resources, cited files, block IDs, download candidates, or follow-up data-reading paths from a docx/doc/wiki URL.
+description: Build an evidence-backed asset map for a Feishu/Lark document. Use when the user wants to inventory document images, attachments, whiteboards, mindnotes, synced references, embedded Sheets/Base resources, cited files, block IDs, download candidates, or follow-up data-reading paths from a docx/doc/wiki URL, and route explicit Docx cover requests without claiming cover metadata is present in normal document fetches.
 ---
 
 # Feishu document asset map
@@ -24,6 +24,14 @@ lark-cli skills read lark-drive
 lark-cli skills read lark-drive references/lark-drive-inspect.md
 ```
 
+When the user explicitly asks about a Docx cover or a mindnote, read the
+matching current `lark-doc` reference before choosing commands:
+
+```bash
+lark-cli skills read lark-doc references/lark-doc-resource-cover.md
+lark-cli skills read lark-doc references/lark-doc-mindnote.md
+```
+
 ## Workflow
 
 1. Resolve the target if needed:
@@ -36,7 +44,6 @@ lark-cli skills read lark-drive references/lark-drive-inspect.md
 
    ```bash
    lark-cli docs +fetch \
-     --api-version v2 \
      --doc '<url-or-token>' \
      --detail with-ids \
      --doc-format xml \
@@ -53,17 +60,21 @@ lark-cli skills read lark-drive references/lark-drive-inspect.md
    | `<sheet token="..." sheet-id="...">` | Embedded Sheet | switch to `lark-sheets` for cell data |
    | `<bitable token="..." table-id="...">` | Embedded Base | switch to `lark-base` for table records |
    | `<cite file-type="sheets|bitable" ...>` | Cited resource | switch by `file-type` |
+   | `<synced_reference src-token="..." src-block-id="...">` | Synced document reference | record source document and block IDs; use `docs +fetch` on the source only when the user needs its content |
+   | Mindnote URL/token or mindnote resource signal | Mindnote | read `lark-doc` mindnote guidance, then use `lark-cli mindnotes ...` for node data |
+   | Explicit Docx cover request | Docx cover binary | read the current cover reference, then use `docs +resource-download --type cover`; this downloads bytes and is not part of an ordinary asset inventory |
    | `vc-node-id` | Meeting note/transcript | switch to `lark-note` |
 
 4. Download only when the user asks for bytes or previews. Otherwise map tokens
-   and links without extra resource requests.
+   and links without extra resource requests. Do not infer cover presence from
+   `docs +fetch`; the current runtime has no metadata-only cover shortcut.
 
 5. For very large documents, start with outline or keyword scope, then expand
    only the relevant sections:
 
    ```bash
-   lark-cli docs +fetch --api-version v2 --doc '<doc>' --scope outline --max-depth 3
-   lark-cli docs +fetch --api-version v2 --doc '<doc>' --scope section --start-block-id '<block-id>' --detail with-ids
+   lark-cli docs +fetch --doc '<doc>' --scope outline --max-depth 3
+   lark-cli docs +fetch --doc '<doc>' --scope section --start-block-id '<block-id>' --detail with-ids
    ```
 
 6. If the user asks for a saved artifact, write a local JSON or Markdown map
@@ -91,6 +102,10 @@ or explicitly requested by the user.
 
 - `docs +fetch` can expose embedded Sheet/Base tokens but cannot read their
   internal data. Switch to `lark-sheets` or `lark-base`.
+- Do not fetch a synced source document or traverse mindnote nodes merely
+  because its reference was discovered. Do not claim that a document has a
+  cover based on `docs +fetch`; call `docs +resource-download --type cover`
+  only when the user explicitly requests the cover binary.
 - Document whiteboard asset mapping is read-only. Switch to
   `$feishu-next:feishu-whiteboard-ops` before modifying, redrawing, recovering,
   or syncing a whiteboard from a local `.drawio` source.
