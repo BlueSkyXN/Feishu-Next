@@ -6,10 +6,11 @@ guidance on top of the current `lark-cli` runtime so Codex can execute common
 multi-step Feishu tasks with the right identity, permissions, pagination,
 export, and evidence boundaries.
 
-Feishu Next `0.2.0` is validated against `lark-cli 1.0.72`. It does not hard
-lock that exact version: the router and runtime validator inspect the installed
-skills, domain help, shortcut help, and required flags before relying on a
-capability.
+Feishu Next `0.3.0` is runtime-validated against the installed
+`lark-cli 1.0.83` and source-audited against `lark-cli 1.0.86`. It does not hard lock
+either version: a source audit does not prove an installed capability, so the
+router and runtime validator inspect the current skills, domain help, shortcut
+help, and required flags before relying on it.
 
 ## Plugin-First Migration
 
@@ -30,7 +31,8 @@ current API behavior, and confirmation rules.
   official `lark-*` skill or bundled workflow; use it instead of a standalone
   `lark-cli-guide` in plugin-based Codex sessions. It also handles runtime
   domains without an embedded skill, such as Open Platform `application` slash
-  commands, by reading current domain and shortcut help.
+  commands, by reading current domain and shortcut help, and defines the
+  escalation protocol for CLI capability gaps and browser/UI fallback.
 - `feishu-readonly-doc-export`: read-only export workflow for doc/docx, sheet,
   bitable, and slides resources.
 - `feishu-doc-asset-map`: document asset inventory workflow for images, files,
@@ -145,6 +147,9 @@ been reinstalled in the Codex environment you are using.
   contents in public artifacts.
 - Stop for explicit user confirmation before sending messages, deleting files,
   changing permissions, moving resources, or adding `--yes`.
+- Never fall back to browser/UI automation on a Feishu resource silently:
+  first prove the CLI gap from current runtime skill reads, then ask for
+  explicit authorization, and keep reads and verification on `lark-cli`.
 
 ## Validate
 
@@ -157,9 +162,12 @@ make validate-all
 ```
 
 The project validator checks marketplace wiring, manifest structure, expected
-skill surface, text hygiene, and Codex plugin/skill validators. The separate
-runtime validator performs local-only `lark-cli skills read` and `--help`
-probes; it does not authenticate, call Feishu APIs, or mutate remote resources.
+skill surface and triggers, text hygiene, and Codex plugin/skill validators.
+The separate runtime validator performs local-only `lark-cli skills read` and
+`--help` probes, validates the core skill/reference contracts, reports other
+Router skill bodies as read/non-empty separately from catalog discovery, and
+allows a restricted distribution to trim non-core skills with warnings. It
+does not authenticate, call Feishu APIs, or mutate remote resources.
 
 Release validation requires the Codex plugin and skill validators to be
 installed. For a deliberately degraded static-only inspection on another

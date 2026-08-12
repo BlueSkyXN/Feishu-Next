@@ -110,33 +110,37 @@ Query backups:
 ```bash
 mkdir -p ./whiteboard-work/<timestamp>
 
-lark-cli whiteboard +query \
+lark-cli --profile '<profile>' whiteboard +export \
+  --as '<identity>' \
   --whiteboard-token '<WHITEBOARD_TOKEN>' \
-  --output_as image \
+  --output-type preview \
   --output ./whiteboard-work/<timestamp>/before \
-  --overwrite \
-  --as user
+  --overwrite
 
-lark-cli whiteboard +query \
+lark-cli --profile '<profile>' whiteboard +export \
+  --as '<identity>' \
   --whiteboard-token '<WHITEBOARD_TOKEN>' \
-  --output_as raw \
+  --output-type raw \
   --output ./whiteboard-work/<timestamp>/before.raw.json \
-  --overwrite \
-  --as user
+  --overwrite
 ```
 
 Render/check/convert a whiteboard-cli artifact:
 
+Use the pinned offline form only after the main skill's cache probe and
+dependency-authorization gate has passed. A cache miss must not silently turn
+this step into a package download.
+
 ```bash
-npx -y @larksuite/whiteboard-cli@^0.2.12 \
+npm exec --yes --offline --package=@larksuite/whiteboard-cli@0.2.13 -- whiteboard-cli \
   -i ./whiteboard-work/<timestamp>/diagram.json \
   -o ./whiteboard-work/<timestamp>/diagram.png
 
-npx -y @larksuite/whiteboard-cli@^0.2.12 \
+npm exec --yes --offline --package=@larksuite/whiteboard-cli@0.2.13 -- whiteboard-cli \
   -i ./whiteboard-work/<timestamp>/diagram.json \
   --check
 
-npx -y @larksuite/whiteboard-cli@^0.2.12 \
+npm exec --yes --offline --package=@larksuite/whiteboard-cli@0.2.13 -- whiteboard-cli \
   -i ./whiteboard-work/<timestamp>/diagram.json \
   --to openapi \
   --format json \
@@ -146,22 +150,22 @@ npx -y @larksuite/whiteboard-cli@^0.2.12 \
 Dry-run then write:
 
 ```bash
-lark-cli whiteboard +update \
+lark-cli --profile '<profile>' whiteboard +update \
+  --as '<identity>' \
   --whiteboard-token '<WHITEBOARD_TOKEN>' \
   --source @./whiteboard-work/<timestamp>/diagram.openapi.json \
   --input_format raw \
   --idempotent-token '<10_TO_64_CHAR_UNIQUE_TOKEN>' \
   --overwrite \
-  --as user \
   --dry-run
 
-lark-cli whiteboard +update \
+lark-cli --profile '<profile>' whiteboard +update \
+  --as '<identity>' \
   --whiteboard-token '<WHITEBOARD_TOKEN>' \
   --source @./whiteboard-work/<timestamp>/diagram.openapi.json \
   --input_format raw \
   --idempotent-token '<10_TO_64_CHAR_UNIQUE_TOKEN>' \
-  --overwrite \
-  --as user
+  --overwrite
 ```
 
 ## Pitfalls

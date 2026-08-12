@@ -8,6 +8,14 @@ description: Export Feishu/Lark cloud documents as local files without editing r
 Use this workflow for exports only. Do not edit, move, delete, publish, or
 change permissions unless the user separately asks and confirms.
 
+This skill may be invoked directly. Before any business call, use
+`$feishu-next:feishu-workflow-router` to build and verify the complete
+`lark_execution` contract. Let the Router discover internal profile/App fields
+from runtime and caller metadata before asking the user; do not ask an ordinary
+user for a raw profile name or App ID. In every command below, replace
+`<profile>` and `<identity>` with that verified contract and preserve them
+across export task continuations.
+
 ## Required runtime reads
 
 Before running export commands:
@@ -45,7 +53,7 @@ lark-cli skills read lark-drive references/lark-drive-inspect.md
      questionable, or the final evidence needs canonical type/title/token:
 
    ```bash
-   lark-cli drive +inspect --url '<feishu-url>' --format json
+   lark-cli --profile '<profile>' drive +inspect --as '<identity>' --url '<feishu-url>' --format json
    ```
 
    Do not manually split a Wiki URL or pass a Wiki node token as if it were the
@@ -73,7 +81,8 @@ lark-cli skills read lark-drive references/lark-drive-inspect.md
 5. Export a URL directly with a bounded local output directory:
 
    ```bash
-   lark-cli drive +export \
+   lark-cli --profile '<profile>' drive +export \
+     --as '<identity>' \
      --url '<FEISHU_OR_LARK_URL>' \
      --file-extension '<pdf|docx|markdown|xlsx|csv|base|pptx>' \
      --output-dir './exports' \
@@ -83,7 +92,8 @@ lark-cli skills read lark-drive references/lark-drive-inspect.md
    For a bare token, use the explicit fallback:
 
    ```bash
-   lark-cli drive +export \
+   lark-cli --profile '<profile>' drive +export \
+     --as '<identity>' \
      --token '<TOKEN>' \
      --doc-type '<doc|docx|sheet|bitable|slides|wiki>' \
      --file-extension '<pdf|docx|markdown|xlsx|csv|base|pptx>' \
@@ -94,7 +104,8 @@ lark-cli skills read lark-drive references/lark-drive-inspect.md
    For a bitable schema-only snapshot:
 
    ```bash
-   lark-cli drive +export \
+   lark-cli --profile '<profile>' drive +export \
+     --as '<identity>' \
      --url '<BITABLE_URL>' \
      --file-extension base \
      --only-schema \
@@ -106,7 +117,8 @@ lark-cli skills read lark-drive references/lark-drive-inspect.md
    is not failure. Continue with the returned `ticket`:
 
    ```bash
-   lark-cli drive +task_result \
+   lark-cli --profile '<profile>' drive +task_result \
+     --as '<identity>' \
      --scenario export \
      --ticket '<TICKET>' \
      --file-token '<SOURCE_TOKEN>'
@@ -115,7 +127,8 @@ lark-cli skills read lark-drive references/lark-drive-inspect.md
    Then download the returned export `file_token`:
 
    ```bash
-   lark-cli drive +export-download \
+   lark-cli --profile '<profile>' drive +export-download \
+     --as '<identity>' \
      --file-token '<EXPORTED_FILE_TOKEN>' \
      --output-dir './exports'
    ```

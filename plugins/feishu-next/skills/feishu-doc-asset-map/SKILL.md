@@ -8,6 +8,14 @@ description: Build an evidence-backed asset map for a Feishu/Lark document. Use 
 Use this workflow to inspect a document and produce a structured asset map. The
 goal is usually a local inventory, not remote mutation.
 
+This skill may be invoked directly. Before any business call, use
+`$feishu-next:feishu-workflow-router` to build and verify the complete
+`lark_execution` contract. Let the Router discover internal profile/App fields
+from runtime and caller metadata before asking the user; do not ask an ordinary
+user for a raw profile name or App ID. In every command below, replace
+`<profile>` and `<identity>` with that verified contract; preserve both when
+following an embedded token into another domain.
+
 ## Required runtime reads
 
 ```bash
@@ -37,13 +45,14 @@ lark-cli skills read lark-doc references/lark-doc-mindnote.md
 1. Resolve the target if needed:
 
    ```bash
-   lark-cli drive +inspect --url '<url>' --format json
+   lark-cli --profile '<profile>' drive +inspect --as '<identity>' --url '<url>' --format json
    ```
 
 2. Fetch the document with IDs and asset tags:
 
    ```bash
-   lark-cli docs +fetch \
+   lark-cli --profile '<profile>' docs +fetch \
+     --as '<identity>' \
      --doc '<url-or-token>' \
      --detail with-ids \
      --doc-format xml \
@@ -73,8 +82,8 @@ lark-cli skills read lark-doc references/lark-doc-mindnote.md
    only the relevant sections:
 
    ```bash
-   lark-cli docs +fetch --doc '<doc>' --scope outline --max-depth 3
-   lark-cli docs +fetch --doc '<doc>' --scope section --start-block-id '<block-id>' --detail with-ids
+   lark-cli --profile '<profile>' docs +fetch --as '<identity>' --doc '<doc>' --scope outline --max-depth 3
+   lark-cli --profile '<profile>' docs +fetch --as '<identity>' --doc '<doc>' --scope section --start-block-id '<block-id>' --detail with-ids
    ```
 
 6. If the user asks for a saved artifact, write a local JSON or Markdown map

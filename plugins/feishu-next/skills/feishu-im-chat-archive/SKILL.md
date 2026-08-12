@@ -9,6 +9,15 @@ Use this workflow for read-only IM archives. Sending messages, adding reactions,
 pinning, changing group membership, or changing feed shortcuts are separate
 write tasks and require explicit confirmation.
 
+This skill may be invoked directly. Before any business call, use
+`$feishu-next:feishu-workflow-router` to build and verify the complete
+`lark_execution` contract. Let the Router discover internal profile/App fields
+from runtime and caller metadata before asking the user; do not ask an ordinary
+user for a raw profile name or App ID. In every command below, replace
+`<profile>` and `<identity>` with that verified contract and preserve them
+across pagination, resource downloads, and thread expansion. Where a command
+is user-only, the verified identity must be `user`; do not silently switch it.
+
 ## Required runtime reads
 
 ```bash
@@ -46,19 +55,20 @@ lark-cli skills read lark-im references/lark-im-messages-resources-download.md
 2. Resolve chat name to `chat_id` when needed:
 
    ```bash
-   lark-cli im +chat-search --query '<chat name keyword>' --format json
+   lark-cli --profile '<profile>' im +chat-search --as '<identity>' --query '<chat name keyword>' --format json
    ```
 
-   For bot identity, use bot identity for both search and list:
+   For a verified bot contract, preserve bot identity for both search and list:
 
    ```bash
-   lark-cli im +chat-search --as bot --query '<chat name keyword>' --format json
+   lark-cli --profile '<profile>' im +chat-search --as bot --query '<chat name keyword>' --format json
    ```
 
 3. Pull a chat stream by page:
 
    ```bash
-   lark-cli im +chat-messages-list \
+   lark-cli --profile '<profile>' im +chat-messages-list \
+     --as '<identity>' \
      --chat-id '<oc_xxx>' \
      --start '<START_ISO_WITH_TIMEZONE>' \
      --end '<END_ISO_WITH_TIMEZONE>' \
@@ -72,7 +82,8 @@ lark-cli skills read lark-im references/lark-im-messages-resources-download.md
 4. For cross-chat search, use user identity only:
 
    ```bash
-   lark-cli im +messages-search \
+   lark-cli --profile '<profile>' im +messages-search \
+     --as user \
      --query '<keyword-or-empty-string>' \
      --start '<START_ISO_WITH_TIMEZONE>' \
      --end '<END_ISO_WITH_TIMEZONE>' \
@@ -86,7 +97,8 @@ lark-cli skills read lark-im references/lark-im-messages-resources-download.md
 5. Download message resources only when explicitly needed:
 
    ```bash
-   lark-cli im +chat-messages-list \
+   lark-cli --profile '<profile>' im +chat-messages-list \
+     --as '<identity>' \
      --chat-id '<oc_xxx>' \
      --download-resources \
      --format json
@@ -98,7 +110,7 @@ lark-cli skills read lark-im references/lark-im-messages-resources-download.md
 6. Expand threads when archive completeness requires it:
 
    ```bash
-   lark-cli im +threads-messages-list --thread '<omt_xxx>' --order asc --page-size 50 --format json
+   lark-cli --profile '<profile>' im +threads-messages-list --as '<identity>' --thread '<omt_xxx>' --order asc --page-size 50 --format json
    ```
 
 7. Save generated archive files under `./chat-archives/` when a local artifact

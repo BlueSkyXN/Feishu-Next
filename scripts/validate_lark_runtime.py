@@ -23,9 +23,7 @@ CORE_SKILLS = {
     "lark-whiteboard",
 }
 
-REQUIRED_SKILL_BODIES = set(CORE_SKILLS)
-
-OPTIONAL_ROUTER_SKILLS = {
+ROUTER_SKILLS = {
     "lark-approval",
     "lark-apps",
     "lark-attendance",
@@ -50,11 +48,15 @@ OPTIONAL_ROUTER_SKILLS = {
     "lark-workflow-standup-report",
 }
 
+REQUIRED_SKILL_BODIES = set(CORE_SKILLS)
+
 REQUIRED_REFERENCES = {
     "lark-doc": {
         "references/lark-doc-fetch.md",
         "references/lark-doc-mindnote.md",
         "references/lark-doc-resource-cover.md",
+        "references/lark-doc-update.md",
+        "references/lark-doc-xml.md",
     },
     "lark-drive": {
         "references/lark-drive-export.md",
@@ -68,7 +70,7 @@ REQUIRED_REFERENCES = {
         "references/lark-im-threads-messages-list.md",
     },
     "lark-whiteboard": {
-        "references/lark-whiteboard-query.md",
+        "references/lark-whiteboard-export.md",
         "references/lark-whiteboard-update.md",
         "references/lark-whiteboard-workflow.md",
     },
@@ -128,9 +130,9 @@ REQUIRED_COMMAND_FLAGS = {
         "--page-token",
         "--thread",
     },
-    ("whiteboard", "+query"): {
+    ("whiteboard", "+export"): {
         "--output",
-        "--output_as",
+        "--output-type",
         "--overwrite",
         "--whiteboard-token",
     },
@@ -147,6 +149,8 @@ REQUIRED_COMMAND_FLAGS = {
 REQUIRED_DIAGNOSTIC_FLAGS = {
     ("whoami",): {"--as"},
     ("auth", "status"): {"--json", "--verify"},
+    ("config", "show"): set(),
+    ("profile", "list"): set(),
     ("doctor",): {"--offline"},
 }
 
@@ -213,19 +217,29 @@ def load_skill_catalog(cli: str) -> set[str]:
     if missing:
         fail(f"missing core runtime skills: {', '.join(sorted(missing))}")
 
-    for name in sorted(OPTIONAL_ROUTER_SKILLS - names):
-        print(f"WARN: optional router skill is unavailable in this runtime: {name}")
+    for name in sorted(ROUTER_SKILLS - names):
+        print(
+            "WARN: router skill is unavailable in this invocation "
+            f"(possibly trimmed by its distribution): {name}"
+        )
 
     return {name for name in names if isinstance(name, str)}
 
 
-def validate_skill_reads(cli: str) -> str:
+def validate_skill_reads(cli: str, discovered_skills: set[str]) -> tuple[str, int, int]:
     skill_bodies: dict[str, str] = {}
     for skill in sorted(REQUIRED_SKILL_BODIES):
         content = run(cli, "skills", "read", skill)
         if not content.strip():
             fail(f"runtime skill is empty: {skill}")
         skill_bodies[skill] = content
+
+    router_bodies_read = 0
+    for skill in sorted(ROUTER_SKILLS & discovered_skills):
+        content = run(cli, "skills", "read", skill)
+        if not content.strip():
+            fail(f"discovered router skill is empty: {skill}")
+        router_bodies_read += 1
 
     shared = skill_bodies["lark-shared"]
     if "# lark-cli" not in shared and "name: lark-shared" not in shared:
@@ -236,7 +250,7 @@ def validate_skill_reads(cli: str) -> str:
             content = run(cli, "skills", "read", skill, reference)
             if not content.strip():
                 fail(f"runtime reference is empty: {skill}/{reference}")
-    return skill_bodies["lark-whiteboard"]
+    return skill_bodies["lark-whiteboard"], len(skill_bodies), router_bodies_read
 
 
 def long_flags(help_text: str) -> set[str]:
@@ -260,18 +274,23 @@ def validate_command_help(cli: str) -> None:
     validate_help_flags(cli, REQUIRED_DIAGNOSTIC_FLAGS)
 
 
-def validate_optional_domains(cli: str) -> None:
+def validate_optional_domains(cli: str) -> int:
+    validated = 0
     for domain, shortcuts in OPTIONAL_DOMAINS.items():
         try:
             run(cli, domain, "--help")
         except ValidationError as exc:
             print(f"WARN: optional lark-cli domain is unavailable: {domain}: {exc}")
             continue
+        validated += 1
         for shortcut in shortcuts:
             try:
                 run(cli, domain, shortcut, "--help")
             except ValidationError as exc:
                 print(f"WARN: optional shortcut is unavailable: {domain} {shortcut}: {exc}")
+            else:
+                validated += 1
+    return validated
 
 
 def validate_repository_guidance(whiteboard_skill: str) -> str:
@@ -280,8 +299,11 @@ def validate_repository_guidance(whiteboard_skill: str) -> str:
         rel = path.relative_to(ROOT)
         if "--api-version" in text:
             fail(f"deprecated docs --api-version guidance remains in {rel}")
-        if "@larksuite/whiteboard-cli@^0.2.11" in text:
-            fail(f"obsolete whiteboard-cli range remains in {rel}")
+        for obsolete in ("@larksuite/whiteboard-cli@^0.2.11", "@larksuite/whiteboard-cli@^0.2.12"):
+            if obsolete in text:
+                fail(f"obsolete whiteboard-cli range {obsolete} remains in {rel}")
+        if "whiteboard +query" in text or "--output_as" in text:
+            fail(f"retired whiteboard +query/--output_as surface remains in {rel}")
 
     match = re.search(r"@larksuite/whiteboard-cli@\^(\d+\.\d+\.\d+)", whiteboard_skill)
     if not match:
@@ -291,7 +313,10 @@ def validate_repository_guidance(whiteboard_skill: str) -> str:
     discovered: set[str] = set()
     for path in WHITEBOARD_FILES:
         discovered.update(
-            re.findall(r"@larksuite/whiteboard-cli@\^(\d+\.\d+\.\d+)", path.read_text())
+            re.findall(
+                r"@larksuite/whiteboard-cli@(?:\^)?(\d+\.\d+\.\d+)",
+                path.read_text(),
+            )
         )
     if discovered != {expected}:
         fail(
@@ -314,16 +339,23 @@ def main() -> None:
     try:
         version = parse_version(run(cli, "--version"))
         skills = load_skill_catalog(cli)
-        whiteboard_skill = validate_skill_reads(cli)
+        whiteboard_skill, core_body_count, router_body_count = validate_skill_reads(
+            cli, skills
+        )
         validate_command_help(cli)
-        validate_optional_domains(cli)
+        optional_command_count = validate_optional_domains(cli)
         whiteboard_version = validate_repository_guidance(whiteboard_skill)
     except ValidationError as exc:
         print(f"FAIL: {exc}", file=sys.stderr)
         raise SystemExit(1) from exc
 
     print(f"Detected lark-cli {version} at {cli}")
-    print(f"Validated {len(CORE_SKILLS)} core skills and {len(skills)} discovered skills")
+    print(
+        f"Validated {core_body_count} core skill bodies and required references; "
+        f"read/non-empty checked {router_body_count} available router skill bodies; "
+        f"catalog discovered {len(skills)} skills"
+    )
+    print(f"Validated {optional_command_count} optional domain/shortcut help surfaces")
     print(f"Validated whiteboard-cli guidance ^{whiteboard_version}")
     print("Feishu Next lark-cli runtime validation passed")
 
