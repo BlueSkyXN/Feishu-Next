@@ -143,6 +143,15 @@ make validate-all
 校验器；缺少这些 validator 时默认失败，避免发布门禁假绿。只做非发布态的
 降级静态检查时可显式运行
 `python3 scripts/validate_project.py --allow-missing-codex-validators`。
+
+## CLI MCP Server
+
+`cli-mcp-server/` 提供独立的本机 MCP wrapper，通过白名单工具调用已安装的
+`lark-cli`，支持 Streamable HTTP 和 legacy SSE。它不属于 Codex plugin 包，
+不会复制或修改官方 CLI；使用、transport、安全边界和验证命令见
+[`cli-mcp-server/README.md`](cli-mcp-server/README.md)。运行 `make validate-all`
+时会同时验证 plugin/runtime 与 MCP wrapper。
+
 需要单独验证时：
 
 ```bash
