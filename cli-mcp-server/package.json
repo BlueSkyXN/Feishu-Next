@@ -1,0 +1,30 @@
+{
+  "name": "feishu-next-cli-mcp-server",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "SSE and Streamable HTTP MCP server that wraps the local lark-cli with a curated tool surface.",
+  "engines": {
+    "node": ">=18"
+  },
+  "bin": {
+    "feishu-next-cli-mcp-server": "./src/server.js"
+  },
+  "scripts": {
+    "start": "node src/server.js",
+    "start:sse": "node src/server.js",
+    "check": "node --check src/constants.js && node --check src/server.js && node --check src/tools.js && node --check src/lark-cli.js && node --check scripts/contract-tools.mjs && node --check scripts/smoke.mjs && node --check scripts/smoke-mcp.mjs && node --check scripts/smoke-streamable.mjs && node --check scripts/smoke-scheduler.mjs && node --check scripts/smoke-auth.mjs && node --check scripts/smoke-transport.mjs",
+    "contract": "node scripts/contract-tools.mjs",
+    "smoke": "node scripts/smoke.mjs",
+    "smoke:mcp": "node scripts/smoke-mcp.mjs",
+    "smoke:streamable": "node scripts/smoke-streamable.mjs",
+    "smoke:scheduler": "node scripts/smoke-scheduler.mjs",
+    "smoke:auth": "node scripts/smoke-auth.mjs",
+    "smoke:transport": "node scripts/smoke-transport.mjs"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "1.29.0",
+    "express": "5.2.1"
+  },
+  "devDependencies": {}
+}
