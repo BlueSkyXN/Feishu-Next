@@ -10,7 +10,8 @@ plugin package -> marketplace install -> skill workflow
 它不是另一个飞书 OpenAPI SDK，也不复制官方 `lark-cli` 内置 skills。它的定位是把常见的
 跨步骤飞书任务沉淀为可复用 Codex Skills，并始终以当前安装的 `lark-cli` 作为运行时真相源。
 
-`Feishu Next 0.2.0` 已使用 `lark-cli 1.0.72` 验证，但不硬锁这个精确版本。router
+`Feishu Next 0.3.0` 已使用本机安装的 `lark-cli 1.0.83` 验证，并对照
+`lark-cli 1.0.86` 源码审计，但不硬锁某个精确版本。源码审计不能替代安装态验证；router
 会动态读取当前 skills、domain help、shortcut help 和 flags；旧版或新版 CLI
 只要核心 runtime surface 校验通过即可使用。
 
@@ -136,7 +137,9 @@ make validate-all
 
 `validate` 保持确定性的静态/plugin/skill 校验；`validate-runtime` 只执行本地
 `lark-cli skills read` 和 `--help` 探测，不认证、不调用飞书 API、不写远端资源；
-`validate-all` 顺序运行二者。静态校验底层会继续调用 Codex 的插件和 skill
+它验证核心 skill/reference，并把其他 Router skill 的“已读取且非空”与 catalog
+的“已发现”数量分开报告；裁剪发行版缺少的非核心 skill 只告警，不假装成 scope
+错误；`validate-all` 顺序运行二者。静态校验底层会继续调用 Codex 的插件和 skill
 校验器；缺少这些 validator 时默认失败，避免发布门禁假绿。只做非发布态的
 降级静态检查时可显式运行
 `python3 scripts/validate_project.py --allow-missing-codex-validators`。

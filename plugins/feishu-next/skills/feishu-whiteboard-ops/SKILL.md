@@ -11,6 +11,15 @@ permissions, or publishing.
 
 The runtime truth is the installed `lark-cli` and its embedded skills.
 
+This skill may be invoked directly. Before any business call, use
+`$feishu-next:feishu-workflow-router` to build and verify the complete
+`lark_execution` contract. Let the Router discover internal profile/App fields
+from runtime and caller metadata before asking the user; do not ask an ordinary
+user for a raw profile name or App ID. In every command below, replace
+`<profile>` and `<identity>` with that verified contract and preserve both
+through document fetch, baseline export, dry-run, write, and post-write
+verification.
+
 ## Official skill relationship
 
 Combine this skill with official runtime skills by responsibility:
@@ -36,11 +45,26 @@ command -v lark-cli
 lark-cli --version
 lark-cli skills read lark-shared
 lark-cli skills read lark-whiteboard
-lark-cli skills read lark-whiteboard references/lark-whiteboard-query.md
+lark-cli skills read lark-whiteboard references/lark-whiteboard-export.md
 lark-cli skills read lark-whiteboard references/lark-whiteboard-update.md
 lark-cli skills read lark-whiteboard references/lark-whiteboard-workflow.md
-npx -y @larksuite/whiteboard-cli@^0.2.12 -v
 ```
+
+Before running any `whiteboard-cli` command, state that the pinned third-party
+package will execute locally, show the exact command and local file effects,
+and obtain explicit user authorization. Feishu write authorization does not
+authorize third-party code execution. After authorization, determine whether
+`@larksuite/whiteboard-cli@0.2.13` is already available in the local npm cache
+with the pinned offline form:
+
+```bash
+npm exec --yes --offline --package=@larksuite/whiteboard-cli@0.2.13 -- whiteboard-cli -v
+```
+
+If the offline probe reports a cache miss, stop before running `npx`, `npm
+install`, or any network-enabled `npm exec`. Package download is a separate
+effect: disclose the exact pinned network-enabled command and obtain explicit
+authorization for the download even when local execution was already approved.
 
 If the user gives a document URL or says "the first/second whiteboard", also
 read:
@@ -88,8 +112,8 @@ For a document URL, fetch the local section or full document with IDs and
 extract `<whiteboard token="...">` in document order:
 
 ```bash
-lark-cli docs +fetch \
-  --as user \
+lark-cli --profile '<profile>' docs +fetch \
+  --as '<identity>' \
   --doc '<doc-url-or-token>' \
   --detail with-ids \
   --doc-format xml \
@@ -108,26 +132,26 @@ raw + code when available:
 ```bash
 mkdir -p ./whiteboard-work/<timestamp>
 
-lark-cli whiteboard +query \
-  --as user \
+lark-cli --profile '<profile>' whiteboard +export \
+  --as '<identity>' \
   --whiteboard-token '<token>' \
-  --output_as image \
+  --output-type preview \
   --output ./whiteboard-work/<timestamp>/before \
   --overwrite \
   --format json
 
-lark-cli whiteboard +query \
-  --as user \
+lark-cli --profile '<profile>' whiteboard +export \
+  --as '<identity>' \
   --whiteboard-token '<token>' \
-  --output_as raw \
+  --output-type raw \
   --output ./whiteboard-work/<timestamp>/before.raw.json \
   --overwrite \
   --format json
 
-lark-cli whiteboard +query \
-  --as user \
+lark-cli --profile '<profile>' whiteboard +export \
+  --as '<identity>' \
   --whiteboard-token '<token>' \
-  --output_as code \
+  --output-type source \
   --output ./whiteboard-work/<timestamp>/before.code \
   --overwrite \
   --format json
@@ -172,12 +196,12 @@ narrow text/color changes after a baseline exists.
 Render and check locally:
 
 ```bash
-npx -y @larksuite/whiteboard-cli@^0.2.12 \
+npm exec --yes --offline --package=@larksuite/whiteboard-cli@0.2.13 -- whiteboard-cli \
   -i ./whiteboard-work/<timestamp>/diagram.svg \
   -o ./whiteboard-work/<timestamp>/diagram.png \
   -f svg
 
-npx -y @larksuite/whiteboard-cli@^0.2.12 \
+npm exec --yes --offline --package=@larksuite/whiteboard-cli@0.2.13 -- whiteboard-cli \
   -i ./whiteboard-work/<timestamp>/diagram.svg \
   -f svg \
   --check
@@ -190,7 +214,7 @@ semantic level or style is right.
 Convert checked SVG to OpenAPI nodes:
 
 ```bash
-npx -y @larksuite/whiteboard-cli@^0.2.12 \
+npm exec --yes --offline --package=@larksuite/whiteboard-cli@0.2.13 -- whiteboard-cli \
   -i ./whiteboard-work/<timestamp>/diagram.svg \
   --to openapi \
   --format json \
@@ -215,8 +239,8 @@ Use additive writes only when the user wants to add nodes and there is no need
 to remove prior content:
 
 ```bash
-lark-cli whiteboard +update \
-  --as user \
+lark-cli --profile '<profile>' whiteboard +update \
+  --as '<identity>' \
   --whiteboard-token '<token>' \
   --source @./whiteboard-work/<timestamp>/diagram.json \
   --input_format raw \
@@ -224,8 +248,8 @@ lark-cli whiteboard +update \
   --dry-run \
   --format json
 
-lark-cli whiteboard +update \
-  --as user \
+lark-cli --profile '<profile>' whiteboard +update \
+  --as '<identity>' \
   --whiteboard-token '<token>' \
   --source @./whiteboard-work/<timestamp>/diagram.json \
   --input_format raw \
@@ -254,8 +278,8 @@ jq -s '{nodes: (.[0].nodes + .[1].nodes)}' \
   ./whiteboard-work/<timestamp>/diagram.json \
   > ./whiteboard-work/<timestamp>/merged.json
 
-lark-cli whiteboard +update \
-  --as user \
+lark-cli --profile '<profile>' whiteboard +update \
+  --as '<identity>' \
   --whiteboard-token '<token>' \
   --source @./whiteboard-work/<timestamp>/merged.json \
   --input_format raw \
@@ -264,8 +288,8 @@ lark-cli whiteboard +update \
   --dry-run \
   --format json
 
-lark-cli whiteboard +update \
-  --as user \
+lark-cli --profile '<profile>' whiteboard +update \
+  --as '<identity>' \
   --whiteboard-token '<token>' \
   --source @./whiteboard-work/<timestamp>/merged.json \
   --input_format raw \
@@ -287,10 +311,10 @@ use `connector.start` and `connector.end`.
 Always export the updated preview:
 
 ```bash
-lark-cli whiteboard +query \
-  --as user \
+lark-cli --profile '<profile>' whiteboard +export \
+  --as '<identity>' \
   --whiteboard-token '<token>' \
-  --output_as image \
+  --output-type preview \
   --output ./whiteboard-work/<timestamp>/after \
   --overwrite \
   --format json

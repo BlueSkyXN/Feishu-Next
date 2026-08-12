@@ -1,6 +1,6 @@
 {
   "name": "feishu-next",
-  "version": "0.2.0+codex.20260719143017",
+  "version": "0.3.0+codex.20260812183209",
   "description": "Reusable Codex skills for common Feishu/Lark workflows powered by the official lark-cli.",
   "author": {
     "name": "Sky"
@@ -17,7 +17,7 @@
   "interface": {
     "displayName": "Feishu Next",
     "shortDescription": "Plugin-first Feishu workflow router and skills for Codex.",
-    "longDescription": "Feishu Next is the plugin-first Feishu/Lark router and workflow layer for Codex. It dynamically discovers the current official lark-cli embedded skills and command help without vendoring them, routes atomic work to the runtime, and hands only explicitly owned stateful workflows to bundled skills for read-only document export, document asset mapping, IM chat archiving, and whiteboard edit/recovery or draw.io publishing with evidence-preserving outputs. Version 0.2.0 is validated against lark-cli 1.0.72 without hard-locking the runtime version.",
+    "longDescription": "Feishu Next is the plugin-first Feishu/Lark router and workflow layer for Codex. It dynamically discovers the current official lark-cli embedded skills and command help without vendoring them, routes atomic work to the runtime, enforces an evidence-first escalation protocol before any browser/UI fallback, and hands only explicitly owned stateful workflows to bundled skills for read-only document export, document asset mapping, IM chat archiving, and whiteboard edit/recovery or draw.io publishing with evidence-preserving outputs. Version 0.3.0 is runtime-validated against lark-cli 1.0.83 and source-audited against lark-cli 1.0.86 without hard-locking either version.",
     "developerName": "Sky",
     "category": "Productivity",
     "capabilities": [
