@@ -1,0 +1,40 @@
+{
+  "name": "feishu-traework-local-auth",
+  "version": "0.1.0+codex.20260814233000",
+  "description": "Optional local helper to reuse this machine's user-owned TraeWork Feishu authorization with official lark-cli environment credentials.",
+  "author": {
+    "name": "BlueSkyXN",
+    "url": "https://github.com/BlueSkyXN"
+  },
+  "homepage": "https://github.com/BlueSkyXN/Feishu-Next/tree/main/plugins/feishu-traework-local-auth",
+  "repository": "https://github.com/BlueSkyXN/Feishu-Next",
+  "license": "UNLICENSED",
+  "keywords": [
+    "codex",
+    "skills",
+    "feishu",
+    "lark",
+    "trae",
+    "traework",
+    "local-auth",
+    "lark-cli"
+  ],
+  "skills": "./skills/",
+  "interface": {
+    "displayName": "Feishu TraeWork Local Auth",
+    "shortDescription": "Reuse your own TraeWork Feishu auth on this machine with lark-cli.",
+    "longDescription": "Optional advanced plugin for users who already completed Feishu authorization for TraeWork inside the Trae client on this computer. A local script reads the current user's Trae session, requests the short-lived Feishu user token already granted to TraeWork, and injects it through official lark-cli LARKSUITE_CLI_* environment credentials. Not the default Feishu Next auth path; prefer a self-owned Feishu app for durable multi-user setups.",
+    "developerName": "BlueSkyXN",
+    "category": "Productivity",
+    "capabilities": [
+      "Skills",
+      "Local Auth Helper",
+      "lark-cli"
+    ],
+    "defaultPrompt": [
+      "Use $feishu-traework-local-auth:feishu-traework-local-auth to reuse this machine's TraeWork Feishu auth."
+    ],
+    "brandColor": "#3370FF",
+    "websiteURL": "https://github.com/BlueSkyXN/Feishu-Next/tree/main/plugins/feishu-traework-local-auth"
+  }
+}

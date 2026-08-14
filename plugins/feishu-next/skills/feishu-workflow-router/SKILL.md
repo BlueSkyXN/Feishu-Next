@@ -1,6 +1,9 @@
 ---
 name: feishu-workflow-router
-description: Plugin-first router for Feishu/Lark lark-cli work. Use when handling any Feishu/Lark URL, token, resource, or lark-cli domain, including documents, Drive, Wiki, Sheets, Base, native Markdown, mindnotes, IM, calendar, mail, tasks, approval, attendance, OKR, meetings, whiteboards, Miaoda/Spark apps, Open Platform slash commands, events, official workflows, custom lark-cli skills, exports, comments, permissions, auth, and scope issues; use it instead of a standalone lark-cli-guide. Also use for lark-channel-bridge or system CLI context selection, LARK_CHANNEL detection, App ID or profile mismatches, isolated login states, and bot-versus-user routing; before concluding lark-cli cannot do something; and before any browser or UI-automation fallback that touches a Feishu/Lark resource.
+description: Use when routing Feishu/Lark lark-cli work by URL, token, domain, auth, profile, or scope; before concluding lark-cli cannot do it; and before any browser/UI fallback. Prefer this over a standalone lark-cli guide.
+metadata:
+  version: "0.3"
+  updated: "2026-08-12"
 ---
 
 # Feishu workflow router

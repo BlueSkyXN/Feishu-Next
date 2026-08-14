@@ -2,7 +2,8 @@
   "name": "feishu-next",
   "description": "A local Codex marketplace for Feishu Next, a runtime-discovered Feishu/Lark lark-cli router and evidence-preserving workflow skill pack. It is runtime-validated against lark-cli 1.0.83 and source-audited against lark-cli 1.0.86 without hard-locking either version.",
   "owner": {
-    "name": "Sky"
+    "name": "BlueSkyXN",
+    "url": "https://github.com/BlueSkyXN"
   },
   "interface": {
     "displayName": "Feishu Next"
@@ -12,11 +13,31 @@
       "name": "feishu-next",
       "description": "Installable Codex plugin replacing standalone Feishu guide skills with dynamic official lark-cli skill/domain routing, runtime compatibility checks, read-only document export, document asset mapping, IM chat archiving, and whiteboard/draw.io operations. It is runtime-validated against lark-cli 1.0.83 and source-audited against lark-cli 1.0.86 without hard-locking either version.",
       "author": {
-        "name": "Sky"
+        "name": "BlueSkyXN",
+        "url": "https://github.com/BlueSkyXN"
       },
       "source": {
         "source": "local",
         "path": "./plugins/feishu-next"
+      },
+      "policy": {
+        "installation": "AVAILABLE",
+        "authentication": "ON_INSTALL"
+      },
+      "category": "Productivity",
+      "homepage": "https://github.com/BlueSkyXN/Feishu-Next/tree/main/plugins/feishu-next"
+    },
+    {
+      "name": "feishu-traework-local-auth",
+      "description": "Optional advanced plugin to reuse this machine's user-owned TraeWork Feishu authorization with official lark-cli environment credentials. Not the default Feishu Next auth path.",
+      "author": {
+        "name": "BlueSkyXN",
+        "url": "https://github.com/BlueSkyXN"
+      },
+      "homepage": "https://github.com/BlueSkyXN/Feishu-Next/tree/main/plugins/feishu-traework-local-auth",
+      "source": {
+        "source": "local",
+        "path": "./plugins/feishu-traework-local-auth"
       },
       "policy": {
         "installation": "AVAILABLE",

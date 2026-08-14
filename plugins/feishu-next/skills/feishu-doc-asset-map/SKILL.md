@@ -1,6 +1,9 @@
 ---
 name: feishu-doc-asset-map
-description: Build an evidence-backed asset map for a Feishu/Lark document. Use when the user wants to inventory document images, attachments, whiteboards, mindnotes, synced references, embedded Sheets/Base resources, cited files, block IDs, download candidates, or follow-up data-reading paths from a docx/doc/wiki URL, and route explicit Docx cover requests without claiming cover metadata is present in normal document fetches.
+description: Use when inventorying images, attachments, whiteboards, embeds, and download candidates in a Feishu/Lark document. Do not claim Docx cover metadata is present from normal document fetches.
+metadata:
+  version: "0.3"
+  updated: "2026-08-12"
 ---
 
 # Feishu document asset map

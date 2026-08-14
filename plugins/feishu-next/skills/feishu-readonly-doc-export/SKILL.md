@@ -1,6 +1,9 @@
 ---
 name: feishu-readonly-doc-export
-description: Export Feishu/Lark cloud documents as local files without editing remote content. Use when the user wants read-only export, backup, PDF/Word/Markdown/XLSX/CSV/PPTX/.base output, or needs to download a doc/docx/sheet/bitable/slides resource from a Feishu, Lark, Wiki, or Drive URL.
+description: Use when exporting Feishu/Lark cloud documents read-only to local PDF, Word, Markdown, XLSX, CSV, PPTX, or .base from a doc, wiki, or Drive URL without editing remote content.
+metadata:
+  version: "0.3"
+  updated: "2026-08-12"
 ---
 
 # Feishu read-only document export

@@ -1,0 +1,8 @@
+interface:
+  display_name: "Feishu TraeWork Local Auth"
+  short_description: "Reuse your own TraeWork Feishu auth on this machine."
+  brand_color: "#3370FF"
+  default_prompt: "Use $feishu-traework-local-auth:feishu-traework-local-auth to reuse this machine's TraeWork Feishu auth."
+
+policy:
+  allow_implicit_invocation: true

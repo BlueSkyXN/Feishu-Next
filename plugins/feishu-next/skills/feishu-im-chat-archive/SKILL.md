@@ -1,6 +1,9 @@
 ---
 name: feishu-im-chat-archive
-description: Archive Feishu/Lark IM chats or message search results with pagination and evidence preservation. Use when the user asks to export, archive, summarize, preserve, or review chat history, group messages, direct messages, message resources, threads, reactions, or time-bounded IM activity.
+description: Use when exporting or archiving Feishu/Lark IM chat history, threads, reactions, or time-bounded messages with pagination and evidence preservation.
+metadata:
+  version: "0.3"
+  updated: "2026-08-12"
 ---
 
 # Feishu IM chat archive

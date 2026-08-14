@@ -1,6 +1,9 @@
 ---
 name: feishu-whiteboard-ops
-description: Operate Feishu/Lark document whiteboards safely with lark-cli. Use when the user asks to view, inspect, modify, redraw, replace, clean up, validate, or recover a whiteboard embedded in a Feishu doc/docx/wiki document, and when syncing a local .drawio / diagrams.net source diagram to an editable Feishu whiteboard while preserving source-of-truth and rollback discipline.
+description: Use when viewing, editing, recovering, or syncing a Feishu/Lark document whiteboard, including publishing a local .drawio source while keeping rollback discipline.
+metadata:
+  version: "0.3"
+  updated: "2026-08-12"
 ---
 
 # Feishu whiteboard ops

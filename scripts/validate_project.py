@@ -13,6 +13,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 PLUGIN = ROOT / "plugins" / "feishu-next"
+TRAEWORK_PLUGIN = ROOT / "plugins" / "feishu-traework-local-auth"
 MARKETPLACE = ROOT / ".agents" / "plugins" / "marketplace.json"
 PLUGIN_VALIDATOR = (
     Path.home()
@@ -99,18 +100,44 @@ def validate_marketplace() -> None:
         fail("marketplace name must be feishu-next")
 
     plugins = payload.get("plugins")
-    if not isinstance(plugins, list) or len(plugins) != 1:
-        fail("marketplace must contain exactly one plugin entry")
+    if not isinstance(plugins, list) or len(plugins) < 1:
+        fail("marketplace must contain at least one plugin entry")
 
-    entry = plugins[0]
-    if entry.get("name") != "feishu-next":
-        fail("marketplace plugin entry name must be feishu-next")
+    by_name = {}
+    for entry in plugins:
+        if not isinstance(entry, dict) or "name" not in entry:
+            fail("marketplace plugin entries must be objects with a name")
+        name = entry["name"]
+        if name in by_name:
+            fail(f"duplicate marketplace plugin name: {name}")
+        by_name[name] = entry
+
+    if "feishu-next" not in by_name:
+        fail("marketplace must include feishu-next")
+
+    entry = by_name["feishu-next"]
     if entry.get("source", {}).get("path") != "./plugins/feishu-next":
-        fail("marketplace source path must be ./plugins/feishu-next")
+        fail("marketplace feishu-next source path must be ./plugins/feishu-next")
     if entry.get("policy", {}).get("installation") != "AVAILABLE":
-        fail("marketplace installation policy must be AVAILABLE")
+        fail("marketplace feishu-next installation policy must be AVAILABLE")
     if entry.get("policy", {}).get("authentication") != "ON_INSTALL":
-        fail("marketplace authentication policy must be ON_INSTALL")
+        fail("marketplace feishu-next authentication policy must be ON_INSTALL")
+
+    # Optional advanced plugin: local TraeWork auth helper
+    if "feishu-traework-local-auth" in by_name:
+        tw = by_name["feishu-traework-local-auth"]
+        if tw.get("source", {}).get("path") != "./plugins/feishu-traework-local-auth":
+            fail(
+                "marketplace feishu-traework-local-auth source path must be "
+                "./plugins/feishu-traework-local-auth"
+            )
+        if tw.get("policy", {}).get("installation") != "AVAILABLE":
+            fail("marketplace feishu-traework-local-auth installation policy must be AVAILABLE")
+        if tw.get("policy", {}).get("authentication") != "ON_INSTALL":
+            fail("marketplace feishu-traework-local-auth authentication policy must be ON_INSTALL")
+        desc = tw.get("description", "")
+        if "optional" not in desc.lower() and "Optional" not in desc:
+            fail("marketplace feishu-traework-local-auth description must mark the plugin optional")
 
 
 def validate_plugin_manifest() -> None:
@@ -270,8 +297,12 @@ def validate_router_migration() -> None:
         fail("plugin manifest must document official lark-* runtime dependency")
 
     marketplace = load_json(MARKETPLACE)
-    entry = marketplace["plugins"][0]
-    entry_description = entry.get("description", "")
+    feishu_entries = [
+        item for item in marketplace.get("plugins", []) if item.get("name") == "feishu-next"
+    ]
+    if not feishu_entries:
+        fail("marketplace must include feishu-next for router migration checks")
+    entry_description = feishu_entries[0].get("description", "")
     if "standalone Feishu guide" not in entry_description:
         fail("marketplace entry must advertise replacement of standalone Feishu guide skills")
 
@@ -507,9 +538,17 @@ def validate_runtime_compatibility_content() -> None:
         fail("plugin manifest must separate the lark-cli runtime and source baselines")
 
     marketplace = load_json(MARKETPLACE)
+    feishu_plugin_desc = next(
+        (
+            item.get("description", "")
+            for item in marketplace.get("plugins", [])
+            if item.get("name") == "feishu-next"
+        ),
+        "",
+    )
     marketplace_descriptions = [
         marketplace.get("description", ""),
-        marketplace["plugins"][0].get("description", ""),
+        feishu_plugin_desc,
     ]
     if not all(
         "runtime-validated against lark-cli 1.0.83" in text
@@ -564,6 +603,162 @@ def validate_text_hygiene() -> None:
                 fail(f"{rel} appears to contain a sensitive runtime value")
 
 
+def validate_traework_local_auth_plugin() -> None:
+    """Optional independent plugin: user-owned TraeWork local auth helper."""
+
+    if not TRAEWORK_PLUGIN.is_dir():
+        fail("plugins/feishu-traework-local-auth is missing")
+
+    manifest_path = TRAEWORK_PLUGIN / ".codex-plugin" / "plugin.json"
+    if not manifest_path.exists():
+        fail("feishu-traework-local-auth plugin manifest is missing")
+    manifest = load_json(manifest_path)
+    if manifest.get("name") != "feishu-traework-local-auth":
+        fail("feishu-traework-local-auth manifest name mismatch")
+    if manifest.get("skills") != "./skills/":
+        fail("feishu-traework-local-auth skills path must be ./skills/")
+    version = manifest.get("version", "")
+    if not re.fullmatch(r"0\.1\.0\+codex\.\d{14}", version):
+        fail("feishu-traework-local-auth version must match 0.1.0+codex.YYYYMMDDHHMMSS")
+    long_description = manifest.get("interface", {}).get("longDescription", "")
+    for marker in ("Optional", "TraeWork", "lark-cli", "LARKSUITE_CLI"):
+        if marker not in long_description and marker.lower() not in long_description.lower():
+            # LARKSUITE_CLI may appear as LARKSUITE_CLI_*
+            if marker == "LARKSUITE_CLI" and "LARKSUITE_CLI" in long_description:
+                continue
+            if marker == "Optional" and "optional" in long_description.lower():
+                continue
+            if marker not in long_description:
+                fail(f"feishu-traework-local-auth longDescription missing marker: {marker}")
+
+    skill_dir = TRAEWORK_PLUGIN / "skills" / "feishu-traework-local-auth"
+    if not skill_dir.is_dir():
+        fail("feishu-traework-local-auth skill directory is missing")
+    skill_path = skill_dir / "SKILL.md"
+    if not skill_path.exists():
+        fail("feishu-traework-local-auth is missing SKILL.md")
+    skill_text = skill_path.read_text()
+    frontmatter = re.match(r"\A---\n(.*?)\n---\n", skill_text, re.DOTALL)
+    if frontmatter is None:
+        fail("feishu-traework-local-auth SKILL.md is missing YAML frontmatter")
+    description_match = re.search(
+        r"^description:\s*(.+)$", frontmatter.group(1), re.MULTILINE
+    )
+    if description_match is None:
+        fail("feishu-traework-local-auth frontmatter is missing description")
+    description = description_match.group(1).strip().strip("'\"")
+    if "use when" not in description.lower():
+        fail("feishu-traework-local-auth description must include an explicit 'Use when' trigger")
+
+    agent_path = skill_dir / "agents" / "openai.yaml"
+    if not agent_path.exists():
+        fail("feishu-traework-local-auth is missing agents/openai.yaml")
+    agent_text = agent_path.read_text()
+    if "$feishu-traework-local-auth:feishu-traework-local-auth" not in agent_text:
+        fail("feishu-traework-local-auth agents/openai.yaml must use plugin-namespaced prompt")
+
+    script_path = skill_dir / "scripts" / "traework_local_auth.py"
+    if not script_path.is_file():
+        fail("feishu-traework-local-auth is missing scripts/traework_local_auth.py")
+
+    required_refs = {
+        "references/user-guide.md",
+        "references/platforms.md",
+        "references/env-contract.md",
+        "references/security-and-limits.md",
+    }
+    for rel in required_refs:
+        if not (skill_dir / rel).is_file():
+            fail(f"feishu-traework-local-auth is missing {rel}")
+        if rel not in skill_text and rel.split("/")[-1] not in skill_text:
+            fail(f"feishu-traework-local-auth SKILL.md must link {rel}")
+
+    # Non-runtime essays must not live in the skill package
+    banned_skill_files = (
+        skill_dir / "references" / "research-notes.md",
+        skill_dir / "references" / "wording.md",
+        skill_dir / "references" / "architecture.md",
+    )
+    for path in banned_skill_files:
+        if path.exists():
+            fail(f"non-runtime doc must live under docs/, not skill: {path.relative_to(ROOT)}")
+
+    for marker in (
+        "user-owned",
+        "LARKSUITE_CLI",
+        "whoami",
+        "Never print",
+        "scripts/traework_local_auth.py",
+        "docs/traework-local-auth",
+    ):
+        if marker not in skill_text:
+            fail(f"feishu-traework-local-auth SKILL.md missing marker: {marker}")
+
+    # Project docs (wording / reference object) live outside the skill package
+    docs_dir = ROOT / "docs" / "traework-local-auth"
+    required_docs = {
+        "README.md": ("Layers", "wording", "cockpit-tools", "Skill"),
+        "wording.md": ("推荐说法", "禁止说法", "user-owned"),
+        "reference-cockpit-tools.md": ("cockpit-tools", "jlcodes99", "只读", "APPDATA"),
+        "architecture.md": ("LARKSUITE_CLI", "分层", "边界"),
+    }
+    if not docs_dir.is_dir():
+        fail("docs/traework-local-auth is missing (project docs for wording/reference)")
+    for name, markers in required_docs.items():
+        path = docs_dir / name
+        if not path.is_file():
+            fail(f"docs/traework-local-auth/{name} is missing")
+        text = path.read_text()
+        for marker in markers:
+            if marker not in text:
+                fail(f"docs/traework-local-auth/{name} missing marker: {marker}")
+
+    # Wording hygiene: plugin + project docs
+    # wording.md intentionally lists forbidden phrases; skip attack-word scan there only.
+    banned = re.compile(r"(破解|盗取|脱壳|bypass oauth|steal token|crack trae)", re.IGNORECASE)
+    private_home_path = re.compile(r"/(?:Users|home)/[^/\s$%]+/")
+    hygiene_roots = [TRAEWORK_PLUGIN, docs_dir]
+    for root in hygiene_roots:
+        for path in root.rglob("*"):
+            if not path.is_file() or path.suffix not in TEXT_EXTENSIONS:
+                continue
+            text = path.read_text(errors="ignore")
+            rel = path.relative_to(ROOT)
+            skip_banned = path.name == "wording.md" and docs_dir in path.parents
+            if not skip_banned and banned.search(text):
+                fail(f"{rel} contains disallowed attack-style wording")
+            if private_home_path.search(text):
+                fail(f"{rel} contains a private absolute home path")
+            for pattern in SENSITIVE_PATTERNS:
+                if pattern.search(text):
+                    fail(f"{rel} appears to contain a sensitive runtime value")
+            for pattern in PLACEHOLDER_PATTERNS:
+                if pattern.search(text):
+                    fail(f"{rel} contains placeholder text matching {pattern.pattern}")
+
+    # Script must advertise cross-platform roots
+    script_text = script_path.read_text()
+    for marker in (
+        'system == "darwin"',
+        'system == "win32"',
+        "APPDATA",
+        ".config",
+        "TRAE_APP_SUPPORT_NAMES",
+        "LARKSUITE_CLI_USER_ACCESS_TOKEN",
+        "cli_a965abcba6fadbd3",
+    ):
+        if marker not in script_text:
+            fail(f"traework_local_auth.py missing cross-platform/auth marker: {marker}")
+
+    readme = (TRAEWORK_PLUGIN / "README.md").read_text()
+    if "Optional" not in readme and "optional" not in readme.lower():
+        fail("feishu-traework-local-auth README must mark the plugin optional")
+    if "TraeWork" not in readme:
+        fail("feishu-traework-local-auth README must mention TraeWork")
+    if "docs/traework-local-auth" not in readme:
+        fail("plugin README must point to docs/traework-local-auth for wording/reference")
+
+
 def validate_codex_validators(*, allow_missing: bool) -> bool:
     missing = [
         name
@@ -588,6 +783,12 @@ def validate_codex_validators(*, allow_missing: bool) -> bool:
     for skill_dir in sorted((PLUGIN / "skills").iterdir()):
         if skill_dir.is_dir():
             run(["python3", str(SKILL_VALIDATOR), str(skill_dir)])
+
+    if TRAEWORK_PLUGIN.is_dir():
+        run(["python3", str(PLUGIN_VALIDATOR), str(TRAEWORK_PLUGIN)])
+        for skill_dir in sorted((TRAEWORK_PLUGIN / "skills").iterdir()):
+            if skill_dir.is_dir():
+                run(["python3", str(SKILL_VALIDATOR), str(skill_dir)])
     return True
 
 
@@ -597,6 +798,7 @@ def main(*, allow_missing_codex_validators: bool = False) -> None:
     validate_skill_surface()
     validate_whiteboard_architecture()
     validate_router_migration()
+    validate_traework_local_auth_plugin()
     validate_execution_context_contract()
     validate_runtime_compatibility_content()
     validate_text_hygiene()
