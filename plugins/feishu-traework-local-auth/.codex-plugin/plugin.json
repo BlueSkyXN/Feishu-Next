@@ -1,6 +1,6 @@
 {
   "name": "feishu-traework-local-auth",
-  "version": "0.1.0+codex.20260817073022",
+  "version": "0.2.0+codex.20260817073434",
   "description": "Optional local helper to reuse this machine's user-owned TraeWork Feishu authorization with official lark-cli environment credentials.",
   "author": {
     "name": "BlueSkyXN",

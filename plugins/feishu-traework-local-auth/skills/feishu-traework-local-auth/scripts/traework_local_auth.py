@@ -657,7 +657,7 @@ def get_third_party_token(jwt: str, host: str) -> dict[str, Any]:
                 "Accept": "application/json",
                 "x-cloudide-token": jwt,
                 "Authorization": f"Bearer {jwt}",
-                "User-Agent": "Feishu-Next-local-traework-bridge/0.1",
+                "User-Agent": "Feishu-Next-local-traework-bridge/0.2",
             },
         )
         try:

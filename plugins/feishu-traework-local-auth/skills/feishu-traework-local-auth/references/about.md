@@ -1,6 +1,6 @@
 # Feishu TraeWork Local Auth
 
-可选本机助手：在**同一台电脑、同一个 OS 用户**上，复用你已经在 Trae / TraeWork 里完成的飞书授权，把它交给官方 `lark-cli` 使用。
+可选本机助手（插件 `0.2.0`）：在**同一台电脑、同一个 OS 用户**上，复用你已经在 Trae / TraeWork 里完成的飞书授权，把它交给官方 `lark-cli` 使用。
 
 它不是 Feishu Next 的默认鉴权，也不是给别人用的公共飞书应用。没有 Trae 登录、或多用户/服务器场景，请改用自己的飞书应用。发给别人时，对方必须在自己的电脑上完成 Trae 登录和 TraeWork 飞书同意；不要拷贝会话文件或 token。
 

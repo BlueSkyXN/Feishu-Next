@@ -2,7 +2,7 @@
 name: feishu-traework-local-auth
 description: "Use when reusing this machine's already-granted TraeWork Feishu authorization with official lark-cli environment credentials, including extracting TraeWork Feishu tokens, asking how to use that token, checking Windows/macOS/Linux support, resolving system vs agent lark-cli, or requesting this helper's self-introduction. Do not use as the default Feishu Next auth path, without a local Trae login, or for multi-user/server setups."
 metadata:
-  version: "0.1"
+  version: "0.2"
   updated: "2026-08-17"
 ---
 

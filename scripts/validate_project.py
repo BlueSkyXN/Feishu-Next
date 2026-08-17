@@ -618,8 +618,8 @@ def validate_traework_local_auth_plugin() -> None:
     if manifest.get("skills") != "./skills/":
         fail("feishu-traework-local-auth skills path must be ./skills/")
     version = manifest.get("version", "")
-    if not re.fullmatch(r"0\.1\.0\+codex\.\d{14}", version):
-        fail("feishu-traework-local-auth version must match 0.1.0+codex.YYYYMMDDHHMMSS")
+    if not re.fullmatch(r"0\.2\.0\+codex\.\d{14}", version):
+        fail("feishu-traework-local-auth version must match 0.2.0+codex.YYYYMMDDHHMMSS")
     long_description = manifest.get("interface", {}).get("longDescription", "")
     for marker in ("Optional", "TraeWork", "lark-cli", "LARKSUITE_CLI"):
         if marker not in long_description and marker.lower() not in long_description.lower():
