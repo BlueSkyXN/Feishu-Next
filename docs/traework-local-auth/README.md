@@ -1,6 +1,6 @@
 # TraeWork 本机授权复用（项目文档）
 
-本目录是 **仓库级说明**，与 Codex skill 本体分离。
+本目录是 **仓库级说明**，与 Codex skill 本体分离。对应插件版本是 `feishu-traework-local-auth` `0.2.1`。
 
 ## 文档分层
 
@@ -39,7 +39,7 @@ Skill 安装后应能独立完成 `about` / `status` / `whoami` / `run`；本目
 发布前检查：
 
 1. 对方有自己的 Trae 登录和 TraeWork 飞书同意
-2. 对方自己安装 `lark-cli`，并用同一个 Python 补齐 `pycryptodome`（或已有 `cryptography`）
+2. 对方自己安装 `lark-cli`，并用同一个 Python 补齐 `pycryptodome`（或已有 `cryptography`）。Windows 优先 `lark-cli.exe`；macOS / Linux 使用无后缀的 `lark-cli`
 3. 用 `about` / `status` / `whoami` / `run` 自检
 4. 不要附带任何 token、`storage.json` 或 JWT 文件
 5. 许可证是 `GPL-3.0-only`；分发时保留版权声明和许可证标识

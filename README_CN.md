@@ -40,7 +40,7 @@ plugin package -> marketplace install -> skill workflow
 
 ```text
 .agents/plugins/marketplace.json       # 本仓库自带 marketplace
-plugins/feishu-next/                   # 可安装插件包
+plugins/feishu-next/                   # 默认工作流插件
   .codex-plugin/plugin.json
   README.md
   skills/
@@ -49,6 +49,8 @@ plugins/feishu-next/                   # 可安装插件包
     feishu-doc-asset-map/
     feishu-im-chat-archive/
     feishu-whiteboard-ops/
+plugins/feishu-traework-local-auth/    # 可选：复用本机 TraeWork 飞书授权
+docs/traework-local-auth/              # 上述可选插件的项目文档
 ```
 
 ## 安装
@@ -70,7 +72,7 @@ codex plugin add feishu-next@feishu-next
 $feishu-next:feishu-workflow-router
 ```
 
-可选高级插件：复用**本机已经完成**的 TraeWork 飞书授权（每人用自己的 Trae 登录，不要拷贝会话或 token）：
+可选插件 `feishu-traework-local-auth` `0.2.1`：复用**本机已经完成**的 TraeWork 飞书授权（每人用自己的 Trae 登录，不要拷贝会话或 token）。它不是 Feishu Next 的默认鉴权。
 
 ```bash
 codex plugin add feishu-traework-local-auth@feishu-next
@@ -79,6 +81,8 @@ codex plugin add feishu-traework-local-auth@feishu-next
 ```text
 $feishu-traework-local-auth:feishu-traework-local-auth
 ```
+
+Windows 上 `lark-cli` 一般是 `lark-cli.exe`；macOS / Linux 只有无后缀的 `lark-cli`，不要写 `.exe`。Windows GBK 控制台已用 `status` / `whoami` / 真实云空间搜索验收。详细安装、用词和验证记录见 [plugins/feishu-traework-local-auth/README.md](plugins/feishu-traework-local-auth/README.md) 与 [docs/traework-local-auth/](docs/traework-local-auth/)。
 
 许可证是 `GPL-3.0-only`，原文见 <https://www.gnu.org/licenses/gpl-3.0.html>。
 
@@ -131,6 +135,12 @@ lark-cli auth status --json --verify
 | `feishu-doc-asset-map` | 盘点文档图片、附件、画板、内嵌表格和 Base |
 | `feishu-im-chat-archive` | 分页归档 IM 消息、线程、资源和 evidence 字段 |
 | `feishu-whiteboard-ops` | 安全查看、修改、重绘、恢复画板，含 `.drawio` 同步边界 |
+
+可选独立插件：
+
+| 插件 | 用途 |
+| --- | --- |
+| `feishu-traework-local-auth` `0.2.1` | 复用本机 TraeWork 飞书授权，按需换取短时用户令牌并驱动官方 `lark-cli` |
 
 ## 本地校验
 

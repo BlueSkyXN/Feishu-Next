@@ -72,15 +72,16 @@ python3 .../traework_local_auth.py whoami
 python3 .../traework_local_auth.py run -- whoami --json
 ```
 
-| 项 | 状态（2026-08-14，macOS + TRAE SOLO CN） |
+| 项 | 状态（插件 `0.2.1`） |
 | --- | --- |
-| `status` 读到本机会话 | 通过（scheme B / storage） |
-| `decrypt-check` | 通过 |
-| `fetch-uat` | HTTP 200，`Type=feishu`，有 open_id / expire_at |
-| `whoami` | returncode 0；`appId=cli_a965abcba6fadbd3`；`identity=user`；`available=true`；`tokenStatus=ready` |
-| Windows | 2026-08-17 在默认 GBK、Python 3.10.11、未启用 `PYTHONUTF8`、`lark-cli` 1.0.68 下通过 `status`、`whoami` 和真实云空间搜索 |
+| `status` 读到本机会话 | 2026-08-14 macOS + TRAE SOLO CN 通过（scheme B / storage） |
+| `decrypt-check` | 2026-08-14 macOS 通过 |
+| `fetch-uat` | 2026-08-14 macOS：HTTP 200，`Type=feishu`，有 open_id / expire_at |
+| `whoami` | 2026-08-14 macOS：returncode 0；`appId=cli_a965abcba6fadbd3`；`identity=user`；`available=true`；`tokenStatus=ready` |
+| Windows GBK | 2026-08-17 默认 GBK、Python 3.10.11、未启用 `PYTHONUTF8`、`lark-cli` 1.0.68 下通过 `status`、`whoami` 和真实云空间搜索 |
+| Windows 二进制 | 同版本优先 `lark-cli.exe`，不把 `.exe` 套到 macOS / Linux；`.cmd` 独占且带 `&`/`|`/`%` 的参数保真尚未单独复现 |
 | Linux 路径生成 | mock 与 cockpit-tools 约定一致；目标 OS 请再跑 `status`/`whoami` |
-| `lark-cli` 多路径 / 新版本优先 | 2026-08-17 本机解析到 agent `1.0.87`；纯函数单测覆盖“更新版本优先” |
+| `lark-cli` 多路径 / 新版本优先 | 2026-08-17 本机解析到 agent `1.0.87`；纯函数单测覆盖“更新版本优先”和 Windows `.exe` 优先 |
 | `run` 消费 token | 取票后注入子进程；禁止 `auth login` / profile / config 变更；不打印 token |
 
 ## 明确边界
