@@ -10,7 +10,7 @@
 | **插件入口** | `plugins/feishu-traework-local-auth/README.md` | 安装、依赖、一句话定位 |
 | **项目文档（本目录）** | `docs/traework-local-auth/` | 用词规范、参考对象说明、架构与验证记录 |
 
-Skill 安装后应能独立完成 `status` / `whoami`；本目录给维护者、审阅者和需要「为什么可以这样做」的读者。
+Skill 安装后应能独立完成 `about` / `status` / `whoami` / `run`；本目录给维护者、审阅者和需要「为什么可以这样做」的读者。面向用户的自我介绍在 skill 内 [about.md](../../plugins/feishu-traework-local-auth/skills/feishu-traework-local-auth/references/about.md)。
 
 ## 文档索引
 
@@ -30,3 +30,16 @@ Skill 安装后应能独立完成 `status` / `whoami`；本目录给维护者、
 - 插件：`plugins/feishu-traework-local-auth/`
 - 脚本：`plugins/feishu-traework-local-auth/skills/feishu-traework-local-auth/scripts/traework_local_auth.py`
 - 调用：`$feishu-traework-local-auth:feishu-traework-local-auth`
+
+
+## 发给别人用
+
+对外安装说明在插件 [README.md](../../plugins/feishu-traework-local-auth/README.md)。
+
+发布前检查：
+
+1. 对方有自己的 Trae 登录和 TraeWork 飞书同意
+2. 对方自己安装 `lark-cli` 和 `pycryptodome`
+3. 用 `about` / `status` / `whoami` / `run` 自检
+4. 不要附带任何 token、`storage.json` 或 JWT 文件
+5. 许可证是 `GPL-3.0-only`；分发时保留版权声明和许可证标识

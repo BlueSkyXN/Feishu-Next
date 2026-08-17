@@ -7,12 +7,16 @@ already authorized for TraeWork, and injects it via LARKSUITE_CLI_* env vars.
 
 - Cross-platform session paths (macOS / Windows / Linux)
 - Default: local session storage; optional file fallback
+- Resolve system and agent-environment lark-cli copies; prefer the newest version
 - Read-only: never writes Trae storage; never prints JWT/UAT
 
 Usage (from skill scripts dir or with full path):
+  python3 traework_local_auth.py about
   python3 traework_local_auth.py status
   python3 traework_local_auth.py whoami
-  eval "$(python3 traework_local_auth.py export-env)"  # prints token; careful with history
+  python3 traework_local_auth.py run -- whoami --json
+  python3 traework_local_auth.py run -- drive +search --as user --page-size 3
+  eval "$(python3 traework_local_auth.py export-env)"  # prints token; last resort only
 """
 
 from __future__ import annotations
@@ -22,6 +26,7 @@ import base64
 import hashlib
 import json
 import os
+import re
 import shutil
 import subprocess
 import sys
@@ -157,6 +162,256 @@ TRAE_APP_SUPPORT_NAMES = (
     "Trae",
     "TRAE",
 )
+LARK_CLI_VERSION_RE = re.compile(r"(\d+)\.(\d+)\.(\d+)")
+LARK_CLI_SOURCE_TIEBREAK = {
+    "override": -1,
+    "path": 0,
+    "agent": 1,
+    "user": 2,
+    "system": 3,
+}
+
+
+def parse_lark_cli_version(raw: str) -> tuple[int, int, int] | None:
+    match = LARK_CLI_VERSION_RE.search(raw or "")
+    if not match:
+        return None
+    return int(match.group(1)), int(match.group(2)), int(match.group(3))
+
+
+def _lark_cli_names() -> tuple[str, ...]:
+    if sys.platform == "win32":
+        return ("lark-cli.exe", "lark-cli.cmd", "lark-cli.bat", "lark-cli")
+    return ("lark-cli",)
+
+
+def _realpath(path: Path) -> Path:
+    try:
+        return path.expanduser().resolve()
+    except OSError:
+        return path.expanduser()
+
+
+def classify_lark_cli_source(path: Path) -> str:
+    text = str(path).replace("\\", "/").lower()
+    agent_marks = (
+        "fnm_multishells",
+        "/.fnm/",
+        "/fnm/",
+        "/.nvm/",
+        "nvm/versions",
+        "/.local/state/",
+        "appdata/local/fnm",
+        "appdata/roaming/fnm",
+    )
+    if any(mark in text for mark in agent_marks):
+        return "agent"
+    system_marks = (
+        "/usr/local/bin",
+        "/opt/homebrew/bin",
+        "/opt/local/bin",
+        "/usr/bin",
+        "program files",
+        "program files (x86)",
+    )
+    if any(mark in text for mark in system_marks):
+        return "system"
+    if "/.local/bin/" in text or text.endswith("/.local/bin/lark-cli"):
+        return "user"
+    if "/node_modules/@larksuite/cli" in text:
+        return "user"
+    return "path"
+
+
+def _iter_path_lark_cli() -> list[Path]:
+    found: list[Path] = []
+    names = _lark_cli_names()
+    for directory in os.get_exec_path():
+        if not directory:
+            continue
+        root = Path(directory)
+        for name in names:
+            candidate = root / name
+            if candidate.is_file():
+                found.append(candidate)
+    return found
+
+
+def _npm_global_bin() -> Path | None:
+    npm = shutil.which("npm")
+    if not npm:
+        return None
+    try:
+        proc = subprocess.run(
+            [npm, "prefix", "-g"],
+            capture_output=True,
+            text=True,
+            timeout=4,
+        )
+    except (OSError, subprocess.SubprocessError):
+        return None
+    prefix = (proc.stdout or "").strip()
+    if proc.returncode != 0 or not prefix:
+        return None
+    root = Path(prefix)
+    return root if sys.platform == "win32" else root / "bin"
+
+
+def _well_known_lark_cli_dirs() -> list[Path]:
+    home = Path.home()
+    dirs: list[Path] = []
+    if sys.platform == "win32":
+        for key in ("APPDATA", "LOCALAPPDATA", "ProgramFiles", "ProgramFiles(x86)"):
+            raw = os.environ.get(key)
+            if not raw:
+                continue
+            base = Path(raw)
+            dirs.extend((base / "npm", base / "nodejs"))
+    else:
+        dirs.extend(
+            (
+                Path("/usr/local/bin"),
+                Path("/opt/homebrew/bin"),
+                Path("/opt/local/bin"),
+                Path("/usr/bin"),
+                home / ".local" / "bin",
+                home / "bin",
+            )
+        )
+
+    for key in ("FNM_MULTISHELL_PATH", "NVM_BIN"):
+        raw = os.environ.get(key)
+        if raw:
+            dirs.append(Path(raw))
+
+    fnm_dir = os.environ.get("FNM_DIR")
+    if fnm_dir:
+        alias = Path(fnm_dir) / "aliases" / "default"
+        dirs.extend((alias, alias / "bin"))
+    nvm_dir = os.environ.get("NVM_DIR")
+    if nvm_dir:
+        dirs.append(Path(nvm_dir) / "current" / "bin")
+
+    npm_bin = _npm_global_bin()
+    if npm_bin is not None:
+        dirs.append(npm_bin)
+    dirs.append(home / ".npm-global" / "bin")
+    return dirs
+
+
+def _probe_lark_cli(path: Path, source: str) -> dict[str, Any]:
+    version_raw = ""
+    version = None
+    runnable = False
+    error = ""
+    try:
+        proc = subprocess.run(
+            [str(path), "--version"],
+            capture_output=True,
+            text=True,
+            timeout=5,
+        )
+        blob = (proc.stdout or proc.stderr or "").strip()
+        version_raw = blob.splitlines()[0] if blob else ""
+        version = parse_lark_cli_version(version_raw)
+        runnable = proc.returncode == 0 and version is not None
+        if not runnable:
+            error = f"exit_{proc.returncode}"
+    except Exception as exc:  # noqa: BLE001
+        error = type(exc).__name__
+    return {
+        "path": str(path),
+        "resolved": str(_realpath(path)),
+        "source": source,
+        "version": ".".join(str(part) for part in version) if version else None,
+        "version_tuple": version,
+        "runnable": runnable,
+        "version_raw": version_raw[:80],
+        "error": error,
+    }
+
+
+def select_lark_cli_candidate(
+    candidates: list[dict[str, Any]],
+    *,
+    override: bool,
+) -> dict[str, Any] | None:
+    if override:
+        for item in candidates:
+            if item.get("source") == "override":
+                return item
+        return candidates[0] if candidates else None
+    runnable = [item for item in candidates if item.get("runnable") and item.get("version_tuple")]
+    if not runnable:
+        return candidates[0] if candidates else None
+    runnable.sort(
+        key=lambda item: (
+            tuple(-part for part in item["version_tuple"]),
+            LARK_CLI_SOURCE_TIEBREAK.get(str(item.get("source")), 9),
+        )
+    )
+    return runnable[0]
+
+
+def resolve_lark_cli() -> dict[str, Any]:
+    override = (os.environ.get("TRAEWORK_LARK_CLI") or os.environ.get("LARK_CLI") or "").strip()
+    queued: list[tuple[str, Path]] = []
+    if override:
+        queued.append(("override", Path(override).expanduser()))
+    for path in _iter_path_lark_cli():
+        queued.append(("path", path))
+    names = _lark_cli_names()
+    for directory in _well_known_lark_cli_dirs():
+        for name in names:
+            path = directory / name
+            if path.is_file():
+                queued.append((classify_lark_cli_source(path), path))
+
+    seen: set[str] = set()
+    candidates: list[dict[str, Any]] = []
+    for source, path in queued:
+        if source == "override" and not path.is_file():
+            candidates.append(
+                {
+                    "path": str(path),
+                    "resolved": str(path),
+                    "source": "override",
+                    "version": None,
+                    "version_tuple": None,
+                    "runnable": False,
+                    "version_raw": "",
+                    "error": "not_found",
+                }
+            )
+            continue
+        if not path.is_file():
+            continue
+        key = str(_realpath(path))
+        if sys.platform == "win32":
+            key = key.lower()
+        if key in seen:
+            continue
+        seen.add(key)
+        classified = "override" if source == "override" else classify_lark_cli_source(path)
+        if source == "path" and classified == "path":
+            classified = "path"
+        elif source == "path":
+            classified = classify_lark_cli_source(path)
+        candidates.append(_probe_lark_cli(path, classified if source != "override" else "override"))
+
+    selected = select_lark_cli_candidate(candidates, override=bool(override))
+
+    def public(item: dict[str, Any]) -> dict[str, Any]:
+        return {key: value for key, value in item.items() if key != "version_tuple"}
+
+    return {
+        "selected": selected["path"] if selected else None,
+        "version": selected.get("version") if selected else None,
+        "source": selected.get("source") if selected else None,
+        "runnable": bool(selected and selected.get("runnable")),
+        "policy": "override" if override else "newest_version",
+        "candidates": [public(item) for item in candidates],
+    }
 
 
 def trae_user_data_roots() -> list[Path]:
@@ -485,12 +740,36 @@ def brand_for_app(app_id: str) -> str:
 
 # --- commands ----------------------------------------------------------------
 
+ABOUT_FALLBACK = (
+    "Feishu TraeWork Local Auth: reuse your own TraeWork Feishu authorization "
+    "on this machine with official lark-cli. See references/about.md."
+)
+
+
+def about_path() -> Path:
+    return Path(__file__).resolve().parent.parent / "references" / "about.md"
+
+
+def about_text() -> str:
+    path = about_path()
+    if path.is_file():
+        return path.read_text(encoding="utf-8")
+    return ABOUT_FALLBACK + "\n"
+
+
+def cmd_about(_: argparse.Namespace) -> int:
+    text = about_text()
+    sys.stdout.write(text if text.endswith("\n") else text + "\n")
+    return 0
+
 
 def cmd_status(_: argparse.Namespace) -> int:
+    lark = resolve_lark_cli()
     report: dict[str, Any] = {
         "jwt_files": [],
         "storage_files": [],
-        "lark_cli": shutil.which("lark-cli"),
+        "lark_cli": lark.get("selected"),
+        "lark_cli_resolution": lark,
     }
     for p in jwt_file_candidates():
         report["jwt_files"].append(
@@ -587,6 +866,41 @@ def cmd_fetch_uat(_: argparse.Namespace) -> int:
     return 0
 
 
+def _lark_env(bundle: dict[str, Any], uat: dict[str, Any]) -> dict[str, str]:
+    env = os.environ.copy()
+    env["LARKSUITE_CLI_APP_ID"] = bundle["app_id"]
+    env["LARKSUITE_CLI_USER_ACCESS_TOKEN"] = uat["access_token"]
+    env["LARKSUITE_CLI_BRAND"] = bundle["brand"]
+    env.setdefault("LARKSUITE_CLI_NO_UPDATE_NOTIFIER", "1")
+    env.setdefault("LARKSUITE_CLI_NO_SKILLS_NOTIFIER", "1")
+    for key in ("LARK_APP_ID", "LARK_APP_SECRET", "LARKSUITE_CLI_APP_SECRET"):
+        env.pop(key, None)
+    return env
+
+
+def normalize_lark_run_args(lark_args: list[str]) -> list[str]:
+    args = list(lark_args or [])
+    if args and args[0] == "--":
+        args = args[1:]
+    if args and Path(args[0]).name.lower() in {"lark-cli", "lark-cli.exe", "lark-cli.cmd", "lark-cli.bat"}:
+        args = args[1:]
+    return args
+
+
+def env_mode_forbidden_reason(lark_args: list[str]) -> str | None:
+    tokens = [item for item in lark_args if not item.startswith("-")]
+    if not tokens:
+        return None
+    head, sub = tokens[0], tokens[1] if len(tokens) > 1 else ""
+    if head == "auth" and sub in {"login", "logout"}:
+        return "auth login/logout is not supported under TraeWork env credentials; use whoami or run"
+    if head == "profile" and sub in {"add", "use", "remove"}:
+        return "profile mutation is not supported under TraeWork env credentials"
+    if head == "config" and sub in {"init", "bind", "remove", "strict-mode", "default-as"}:
+        return "config mutation is not supported under TraeWork env credentials"
+    return None
+
+
 def cmd_export_env(_: argparse.Namespace) -> int:
     _, _, uat, bundle = _fetch_bundle()
     # shell-safe single-quoted
@@ -611,23 +925,22 @@ def cmd_export_env(_: argparse.Namespace) -> int:
 
 def cmd_whoami(args: argparse.Namespace) -> int:
     _, meta, uat, bundle = _fetch_bundle()
-    env = os.environ.copy()
-    env["LARKSUITE_CLI_APP_ID"] = bundle["app_id"]
-    env["LARKSUITE_CLI_USER_ACCESS_TOKEN"] = uat["access_token"]
-    env["LARKSUITE_CLI_BRAND"] = bundle["brand"]
-    for k in ("LARK_APP_ID", "LARK_APP_SECRET", "LARKSUITE_CLI_APP_SECRET"):
-        env.pop(k, None)
+    env = _lark_env(bundle, uat)
 
-    lark = shutil.which("lark-cli")
-    if not lark:
-        print(json.dumps({"ok": False, "error": "lark-cli not found"}, ensure_ascii=False))
+    lark = resolve_lark_cli()
+    selected = lark.get("selected")
+    if not selected or not lark.get("runnable"):
+        print(json.dumps({"ok": False, "error": "lark-cli not found", "lark_cli_resolution": lark}, ensure_ascii=False, indent=2))
         return 3
 
-    cmd = [lark, "whoami", "--json"] if not args.plain else [lark, "whoami"]
+    cmd = [selected, "whoami", "--json"] if not args.plain else [selected, "whoami"]
     proc = subprocess.run(cmd, env=env, capture_output=True, text=True)
     out: dict[str, Any] = {
         "ok": proc.returncode == 0,
         "returncode": proc.returncode,
+        "lark_cli": selected,
+        "lark_cli_version": lark.get("version"),
+        "lark_cli_source": lark.get("source"),
         "jwt_source": meta.get("source"),
         "app_id": bundle["app_id"],
         "brand": bundle["brand"],
@@ -665,32 +978,81 @@ def cmd_whoami(args: argparse.Namespace) -> int:
     return 0 if proc.returncode == 0 else 4
 
 
+def cmd_run(args: argparse.Namespace) -> int:
+    lark_args = normalize_lark_run_args(list(getattr(args, "lark_args", []) or []))
+    if not lark_args:
+        print(
+            json.dumps(
+                {
+                    "ok": False,
+                    "error": "missing lark-cli arguments",
+                    "usage": "python3 traework_local_auth.py run -- <lark-cli args>",
+                    "example": "python3 traework_local_auth.py run -- drive +search --as user --page-size 3",
+                },
+                ensure_ascii=False,
+                indent=2,
+            ),
+            file=sys.stderr,
+        )
+        return 2
+    forbidden = env_mode_forbidden_reason(lark_args)
+    if forbidden:
+        print(json.dumps({"ok": False, "error": forbidden}, ensure_ascii=False, indent=2), file=sys.stderr)
+        return 2
+
+    lark = resolve_lark_cli()
+    selected = lark.get("selected")
+    if not selected or not lark.get("runnable"):
+        print(json.dumps({"ok": False, "error": "lark-cli not found", "lark_cli_resolution": lark}, ensure_ascii=False, indent=2), file=sys.stderr)
+        return 3
+
+    _, _meta, uat, bundle = _fetch_bundle()
+    env = _lark_env(bundle, uat)
+    proc = subprocess.run([selected, *lark_args], env=env)
+    return int(proc.returncode)
+
+
 def build_parser() -> argparse.ArgumentParser:
     p = argparse.ArgumentParser(description="Reuse local TraeWork Feishu authorization with lark-cli")
     sub = p.add_subparsers(dest="cmd", required=True)
 
+    sub.add_parser("about", help="print the built-in self-introduction (no secrets)")
     sub.add_parser("status", help="probe jwt file / storage / decrypt ability (no secrets)")
     sub.add_parser("decrypt-check", help="decrypt storage and report meta only")
     sub.add_parser("fetch-uat", help="GetThirdPartyToken and report meta only")
+    sub.add_parser("resolve-lark-cli", help="list system/agent lark-cli copies and pick the newest")
     sub.add_parser("export-env", help="print export lines for LARKSUITE_CLI_* (token on stdout)")
     w = sub.add_parser("whoami", help="fetch UAT, inject env, run lark-cli whoami")
     w.add_argument("--plain", action="store_true", help="run whoami without --json")
+    r = sub.add_parser("run", help="fetch UAT and run a lark-cli command without printing the token")
+    r.add_argument(
+        "lark_args",
+        nargs=argparse.REMAINDER,
+        help="lark-cli arguments; prefer: run -- drive +search --as user",
+    )
     return p
 
 
 def main(argv: list[str] | None = None) -> int:
     args = build_parser().parse_args(argv)
     try:
+        if args.cmd == "about":
+            return cmd_about(args)
         if args.cmd == "status":
             return cmd_status(args)
         if args.cmd == "decrypt-check":
             return cmd_decrypt_check(args)
         if args.cmd == "fetch-uat":
             return cmd_fetch_uat(args)
+        if args.cmd == "resolve-lark-cli":
+            print(json.dumps(resolve_lark_cli(), ensure_ascii=False, indent=2))
+            return 0
         if args.cmd == "export-env":
             return cmd_export_env(args)
         if args.cmd == "whoami":
             return cmd_whoami(args)
+        if args.cmd == "run":
+            return cmd_run(args)
         return 1
     except Exception as exc:  # noqa: BLE001
         print(json.dumps({"ok": False, "error": str(exc), "type": type(exc).__name__}, ensure_ascii=False, indent=2))

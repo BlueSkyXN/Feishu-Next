@@ -662,6 +662,7 @@ def validate_traework_local_auth_plugin() -> None:
         fail("feishu-traework-local-auth is missing scripts/traework_local_auth.py")
 
     required_refs = {
+        "references/about.md",
         "references/user-guide.md",
         "references/platforms.md",
         "references/env-contract.md",
@@ -746,9 +747,17 @@ def validate_traework_local_auth_plugin() -> None:
         "TRAE_APP_SUPPORT_NAMES",
         "LARKSUITE_CLI_USER_ACCESS_TOKEN",
         "cli_a965abcba6fadbd3",
+        "TRAEWORK_LARK_CLI",
+        "newest_version",
+        "resolve_lark_cli",
+        "cmd_run",
+        "normalize_lark_run_args",
+        "cmd_about",
     ):
         if marker not in script_text:
             fail(f"traework_local_auth.py missing cross-platform/auth marker: {marker}")
+
+    _validate_traework_lark_cli_resolution(script_path)
 
     readme = (TRAEWORK_PLUGIN / "README.md").read_text()
     if "Optional" not in readme and "optional" not in readme.lower():
@@ -757,6 +766,47 @@ def validate_traework_local_auth_plugin() -> None:
         fail("feishu-traework-local-auth README must mention TraeWork")
     if "docs/traework-local-auth" not in readme:
         fail("plugin README must point to docs/traework-local-auth for wording/reference")
+
+
+def _validate_traework_lark_cli_resolution(script_path: Path) -> None:
+    import importlib.util
+
+    spec = importlib.util.spec_from_file_location("traework_local_auth", script_path)
+    if spec is None or spec.loader is None:
+        fail("unable to import traework_local_auth.py for resolver tests")
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+    parsed = mod.parse_lark_cli_version("lark-cli version 1.0.87")
+    if parsed != (1, 0, 87):
+        fail(f"parse_lark_cli_version failed: {parsed!r}")
+    candidates = [
+        {"path": "agent-old", "source": "agent", "version_tuple": (1, 0, 86), "runnable": True},
+        {"path": "system-new", "source": "system", "version_tuple": (1, 0, 87), "runnable": True},
+        {"path": "path-old", "source": "path", "version_tuple": (1, 0, 86), "runnable": True},
+    ]
+    picked = mod.select_lark_cli_candidate(candidates, override=False)
+    if not picked or picked.get("path") != "system-new":
+        fail("lark-cli resolver must prefer the newest version over PATH/agent copies")
+    same = [
+        {"path": "system-same", "source": "system", "version_tuple": (1, 0, 87), "runnable": True},
+        {"path": "path-same", "source": "path", "version_tuple": (1, 0, 87), "runnable": True},
+    ]
+    picked = mod.select_lark_cli_candidate(same, override=False)
+    if not picked or picked.get("path") != "path-same":
+        fail("equal lark-cli versions must prefer the PATH copy")
+    override = [
+        {"path": "override-old", "source": "override", "version_tuple": (1, 0, 80), "runnable": True},
+        {"path": "system-new", "source": "system", "version_tuple": (1, 0, 87), "runnable": True},
+    ]
+    picked = mod.select_lark_cli_candidate(override, override=True)
+    if not picked or picked.get("path") != "override-old":
+        fail("TRAEWORK_LARK_CLI / LARK_CLI override must win even when older")
+    if mod.normalize_lark_run_args(["--", "lark-cli", "drive", "+search"]) != ["drive", "+search"]:
+        fail("run args must strip -- and a leading lark-cli")
+    if not mod.env_mode_forbidden_reason(["auth", "login", "--domain", "docs"]):
+        fail("run must refuse auth login under env credentials")
+    if mod.env_mode_forbidden_reason(["drive", "+search", "--as", "user"]):
+        fail("run must allow ordinary business lark-cli commands")
 
 
 def validate_codex_validators(*, allow_missing: bool) -> bool:

@@ -34,6 +34,18 @@
 
 见 skill 内 [platforms.md](../../plugins/feishu-traework-local-auth/skills/feishu-traework-local-auth/references/platforms.md) 与 [reference-cockpit-tools.md](reference-cockpit-tools.md)。
 
+## lark-cli 二进制解析
+
+默认不绑死当前 `PATH` 的第一个 `lark-cli`。脚本会收集：
+
+- 当前 `PATH`（含智能体/fnm/nvm 会话）
+- 常见系统路径（`/usr/local/bin`、Homebrew、`~/.local/bin`、Windows `%APPDATA%\npm`）
+- 当前 agent/node 环境（`FNM_MULTISHELL_PATH`、`FNM_DIR`、`NVM_BIN`、`npm prefix -g`）
+
+然后按 `newest_version` 选择可运行副本。版本相同则优先 `PATH` 命中。`TRAEWORK_LARK_CLI` / `LARK_CLI` 可强制指定文件，不再比版本。
+
+用 token 的方式是 `run -- <lark-cli args>`：取短时 UAT，注入到这一次子进程，不打印 token。这仍不是 `lark-cli auth/profile` 集成，也不是改 PATH 的常驻 shim。
+
 ## 环境契约
 
 见 skill 内 [env-contract.md](../../plugins/feishu-traework-local-auth/skills/feishu-traework-local-auth/references/env-contract.md)。
@@ -53,7 +65,9 @@ TraeWork client id（非 secret）：
 python3 plugins/feishu-traework-local-auth/skills/feishu-traework-local-auth/scripts/traework_local_auth.py status
 python3 .../traework_local_auth.py decrypt-check
 python3 .../traework_local_auth.py fetch-uat
+python3 .../traework_local_auth.py resolve-lark-cli
 python3 .../traework_local_auth.py whoami
+python3 .../traework_local_auth.py run -- whoami --json
 ```
 
 | 项 | 状态（2026-08-14，macOS + TRAE SOLO CN） |
@@ -63,6 +77,8 @@ python3 .../traework_local_auth.py whoami
 | `fetch-uat` | HTTP 200，`Type=feishu`，有 open_id / expire_at |
 | `whoami` | returncode 0；`appId=cli_a965abcba6fadbd3`；`identity=user`；`available=true`；`tokenStatus=ready` |
 | Windows/Linux 路径生成 | mock 与 cockpit-tools 约定一致；目标 OS 请再跑 `status`/`whoami` |
+| `lark-cli` 多路径 / 新版本优先 | 2026-08-17 本机解析到 agent `1.0.87`；纯函数单测覆盖“更新版本优先” |
+| `run` 消费 token | 取票后注入子进程；禁止 `auth login` / profile / config 变更；不打印 token |
 
 ## 明确边界
 

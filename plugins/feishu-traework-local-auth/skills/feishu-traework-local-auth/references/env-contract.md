@@ -10,6 +10,15 @@ Official `lark-cli` environment credentials:
 
 Child inject also unsets `LARK_APP_ID`, `LARK_APP_SECRET`, `LARKSUITE_CLI_APP_SECRET` to avoid mixing secrets.
 
+## lark-cli binary
+
+| Variable | Role |
+| --- | --- |
+| `TRAEWORK_LARK_CLI` | Preferred exact binary override |
+| `LARK_CLI` | Same override if `TRAEWORK_LARK_CLI` is unset |
+
+If neither override is set, the helper scans `PATH`, system locations, and the current agent/node environment, then uses `newest_version`.
+
 ## TraeWork client ids (public, not secrets)
 
 | Region | Client id | Brand |
@@ -23,10 +32,13 @@ Token is bound to that app id.
 
 ```bash
 python3 scripts/traework_local_auth.py whoami
+python3 scripts/traework_local_auth.py run -- whoami --json
 ```
 
 Expect: matching `appId`, `identity=user`, `available=true`.
 
-Under env credentials, use `whoami` for diagnosis — not `auth login` / profile mutation.
+Use `run -- <lark-cli args>` for business commands. The helper injects the three variables into that child only.
 
-Tokens are short-lived; re-run the helper before long sessions. Scope is TraeWork consent only.
+Under env credentials, use `whoami` / `run` for diagnosis — not `auth login` / profile mutation.
+
+Tokens are short-lived; `run` re-fetches before each command. Scope is TraeWork consent only.

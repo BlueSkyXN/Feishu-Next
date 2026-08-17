@@ -70,6 +70,18 @@ codex plugin add feishu-next@feishu-next
 $feishu-next:feishu-workflow-router
 ```
 
+可选高级插件：复用**本机已经完成**的 TraeWork 飞书授权（每人用自己的 Trae 登录，不要拷贝会话或 token）：
+
+```bash
+codex plugin add feishu-traework-local-auth@feishu-next
+```
+
+```text
+$feishu-traework-local-auth:feishu-traework-local-auth
+```
+
+许可证是 `GPL-3.0-only`，原文见 <https://www.gnu.org/licenses/gpl-3.0.html>。
+
 也可以直接调用具体工作流：
 
 ```text

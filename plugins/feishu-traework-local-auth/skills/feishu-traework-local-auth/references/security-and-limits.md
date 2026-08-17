@@ -3,7 +3,7 @@
 ## Do
 
 - Same machine, same OS user who authorized TraeWork
-- Prefer `status` / `whoami` / `fetch-uat`
+- Prefer `about` / `status` / `whoami` / `run`
 - Re-fetch before long sessions
 
 ## Do not
