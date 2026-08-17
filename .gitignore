@@ -5,3 +5,6 @@ exports/
 lark-im-resources/
 asset-maps/
 chat-archives/
+__pycache__/
+*.py[cod]
+*$py.class
