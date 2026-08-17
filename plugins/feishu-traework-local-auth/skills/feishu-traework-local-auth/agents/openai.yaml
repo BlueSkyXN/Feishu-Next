@@ -1,8 +1,8 @@
 interface:
-  display_name: "Feishu TraeWork Local Auth"
-  short_description: "Reuse your own TraeWork Feishu auth on this machine."
+  display_name: "Feishu TraeWork 本地授权"
+  short_description: "复用本机 TraeWork 飞书授权并接入官方 lark-cli"
   brand_color: "#3370FF"
-  default_prompt: "Use $feishu-traework-local-auth:feishu-traework-local-auth to reuse this machine's TraeWork Feishu authorization with lark-cli."
+  default_prompt: "使用 $feishu-traework-local-auth:feishu-traework-local-auth 复用本机 TraeWork 飞书授权，并运行所需的 lark-cli 命令。"
 
 policy:
   allow_implicit_invocation: false

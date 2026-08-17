@@ -1,7 +1,7 @@
 {
   "name": "feishu-traework-local-auth",
-  "version": "0.2.0+codex.20260817073434",
-  "description": "Optional local helper to reuse this machine's user-owned TraeWork Feishu authorization with official lark-cli environment credentials.",
+  "version": "0.2.1+codex.20260817181947",
+  "description": "Optional helper to reuse this machine's user-owned TraeWork Feishu authorization with official lark-cli environment credentials.",
   "author": {
     "name": "BlueSkyXN",
     "url": "https://github.com/BlueSkyXN"
@@ -22,8 +22,8 @@
   "skills": "./skills/",
   "interface": {
     "displayName": "Feishu TraeWork Local Auth",
-    "shortDescription": "Reuse your own TraeWork Feishu auth on this machine with lark-cli.",
-    "longDescription": "Optional advanced plugin for a person who already completed Feishu authorization for TraeWork on this computer. It reads only that OS user's Trae session, fetches the short-lived Feishu user token already granted to TraeWork, and runs official lark-cli through LARKSUITE_CLI_* environment credentials. Each recipient must authorize on their own machine. Not the default Feishu Next auth path. Windows paths are implemented but not live-tested.",
+    "shortDescription": "Reuse your own TraeWork Feishu auth on this machine with official lark-cli.",
+    "longDescription": "Optional plugin for a person who already completed Feishu authorization for TraeWork on this computer. It reads only that OS user's Trae session, obtains a short-lived Feishu user token already granted to TraeWork, and injects it into one official lark-cli child process through LARKSUITE_CLI_* environment credentials. Each recipient must authorize on their own machine. Not the default Feishu Next auth path. Windows GBK + PowerShell has been live-tested.",
     "developerName": "BlueSkyXN",
     "category": "Productivity",
     "capabilities": [
@@ -33,8 +33,8 @@
     ],
     "defaultPrompt": [
       "Use $feishu-traework-local-auth:feishu-traework-local-auth to reuse this machine's TraeWork Feishu auth.",
-      "Use $feishu-traework-local-auth:feishu-traework-local-auth to introduce itself and Windows support.",
-      "Use $feishu-traework-local-auth:feishu-traework-local-auth to run lark-cli with that local auth."
+      "Use $feishu-traework-local-auth:feishu-traework-local-auth to verify the effective Feishu user identity.",
+      "Use $feishu-traework-local-auth:feishu-traework-local-auth to run the requested lark-cli command with that identity."
     ],
     "brandColor": "#3370FF",
     "websiteURL": "https://github.com/BlueSkyXN/Feishu-Next/tree/main/plugins/feishu-traework-local-auth"

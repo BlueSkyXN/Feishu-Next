@@ -618,8 +618,8 @@ def validate_traework_local_auth_plugin() -> None:
     if manifest.get("skills") != "./skills/":
         fail("feishu-traework-local-auth skills path must be ./skills/")
     version = manifest.get("version", "")
-    if not re.fullmatch(r"0\.2\.0\+codex\.\d{14}", version):
-        fail("feishu-traework-local-auth version must match 0.2.0+codex.YYYYMMDDHHMMSS")
+    if not re.fullmatch(r"0\.2\.1\+codex\.\d{14}", version):
+        fail("feishu-traework-local-auth version must match 0.2.1+codex.YYYYMMDDHHMMSS")
     long_description = manifest.get("interface", {}).get("longDescription", "")
     for marker in ("Optional", "TraeWork", "lark-cli", "LARKSUITE_CLI"):
         if marker not in long_description and marker.lower() not in long_description.lower():
@@ -684,35 +684,41 @@ def validate_traework_local_auth_plugin() -> None:
         if path.exists():
             fail(f"non-runtime doc must live under docs/, not skill: {path.relative_to(ROOT)}")
 
-    for marker in (
-        "user-owned",
-        "LARKSUITE_CLI",
-        "whoami",
-        "Never print",
-        "scripts/traework_local_auth.py",
-        "docs/traework-local-auth",
+    for markers in (
+        ("user-owned", "用户自有", "当前用户"),
+        ("LARKSUITE_CLI",),
+        ("whoami",),
+        ("Never print", "绝不打印"),
+        ("scripts/traework_local_auth.py",),
+        ("docs/traework-local-auth",),
     ):
-        if marker not in skill_text:
-            fail(f"feishu-traework-local-auth SKILL.md missing marker: {marker}")
+        if not any(marker in skill_text for marker in markers):
+            fail(
+                "feishu-traework-local-auth SKILL.md missing marker group: "
+                + " / ".join(markers)
+            )
 
     # Project docs (wording / reference object) live outside the skill package
     docs_dir = ROOT / "docs" / "traework-local-auth"
     required_docs = {
-        "README.md": ("Layers", "wording", "cockpit-tools", "Skill"),
-        "wording.md": ("推荐说法", "禁止说法", "user-owned"),
-        "reference-cockpit-tools.md": ("cockpit-tools", "jlcodes99", "只读", "APPDATA"),
-        "architecture.md": ("LARKSUITE_CLI", "分层", "边界"),
+        "README.md": (("Layers", "文档分层"), ("wording",), ("cockpit-tools",), ("Skill",)),
+        "wording.md": (("推荐说法",), ("禁止说法",), ("user-owned", "当前用户")),
+        "reference-cockpit-tools.md": (("cockpit-tools",), ("jlcodes99",), ("只读",), ("APPDATA",)),
+        "architecture.md": (("LARKSUITE_CLI",), ("分层",), ("边界",)),
     }
     if not docs_dir.is_dir():
         fail("docs/traework-local-auth is missing (project docs for wording/reference)")
-    for name, markers in required_docs.items():
+    for name, marker_groups in required_docs.items():
         path = docs_dir / name
         if not path.is_file():
             fail(f"docs/traework-local-auth/{name} is missing")
         text = path.read_text()
-        for marker in markers:
-            if marker not in text:
-                fail(f"docs/traework-local-auth/{name} missing marker: {marker}")
+        for markers in marker_groups:
+            if not any(marker in text for marker in markers):
+                fail(
+                    f"docs/traework-local-auth/{name} missing marker group: "
+                    + " / ".join(markers)
+                )
 
     # Wording hygiene: plugin + project docs
     # wording.md intentionally lists forbidden phrases; skip attack-word scan there only.
@@ -779,6 +785,32 @@ def _validate_traework_lark_cli_resolution(script_path: Path) -> None:
     parsed = mod.parse_lark_cli_version("lark-cli version 1.0.87")
     if parsed != (1, 0, 87):
         fail(f"parse_lark_cli_version failed: {parsed!r}")
+    output_payload = {"name": "测试😀"}
+    gbk_output = mod.json_for_output(output_payload, encoding="gbk")
+    if json.loads(gbk_output) != output_payload or "😀" in gbk_output:
+        fail("GBK JSON output must preserve non-GBK characters through JSON escapes")
+    cp1252_text = mod.text_for_output("飞书😀", encoding="cp1252")
+    if "飞书" in cp1252_text or "\\u98de" not in cp1252_text:
+        fail("legacy non-Chinese consoles must receive escaped readable text")
+    quoted_python = mod._expanded_path_value(f'"{sys.executable}"')
+    if Path(quoted_python) != Path(sys.executable):
+        fail("quoted executable paths must be accepted by override expansion")
+    runtime = mod.runtime_status()
+    if runtime.get("python_executable") != sys.executable:
+        fail("runtime status must identify the active Python interpreter")
+    if not isinstance(runtime.get("dependency_install_argv"), list):
+        fail("runtime status must provide an agent-runnable dependency argv")
+
+    class DeniedPath:
+        def __str__(self) -> str:
+            return "denied-storage.json"
+
+        def is_file(self) -> bool:
+            raise PermissionError("denied")
+
+    denied = mod.file_status(DeniedPath())
+    if denied.get("error") != "PermissionError":
+        fail("status must report path permission failures without crashing")
     candidates = [
         {"path": "agent-old", "source": "agent", "version_tuple": (1, 0, 86), "runnable": True},
         {"path": "system-new", "source": "system", "version_tuple": (1, 0, 87), "runnable": True},
@@ -794,6 +826,23 @@ def _validate_traework_lark_cli_resolution(script_path: Path) -> None:
     picked = mod.select_lark_cli_candidate(same, override=False)
     if not picked or picked.get("path") != "path-same":
         fail("equal lark-cli versions must prefer the PATH copy")
+    windows_kinds = [
+        {
+            "path": r"C:\\npm\\lark-cli.cmd",
+            "source": "path",
+            "version_tuple": (1, 0, 87),
+            "runnable": True,
+        },
+        {
+            "path": r"C:\\npm\\lark-cli.exe",
+            "source": "system",
+            "version_tuple": (1, 0, 87),
+            "runnable": True,
+        },
+    ]
+    picked = mod.select_lark_cli_candidate(windows_kinds, override=False)
+    if not picked or not str(picked.get("path", "")).lower().endswith(".exe"):
+        fail("Windows resolver must prefer lark-cli.exe over .cmd at the same version")
     override = [
         {"path": "override-old", "source": "override", "version_tuple": (1, 0, 80), "runnable": True},
         {"path": "system-new", "source": "system", "version_tuple": (1, 0, 87), "runnable": True},

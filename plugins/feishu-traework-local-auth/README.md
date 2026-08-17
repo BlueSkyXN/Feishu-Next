@@ -1,6 +1,6 @@
 # Feishu TraeWork Local Auth
 
-Optional Codex plugin: reuse **your own** TraeWork Feishu authorization on **this machine** with official `lark-cli` environment credentials.
+Optional Codex plugin: reuse **your own** TraeWork Feishu authorization on **this machine** with official `lark-cli` environment credentials. Each command obtains a short-lived user token on demand and injects it into one child process through `LARKSUITE_CLI_*`.
 
 Not the default Feishu Next auth path. For multi-user or no-Trae setups, register your own Feishu app.
 
@@ -15,7 +15,7 @@ Recipient checklist:
 1. Trae / TRAE SOLO / Trae CN / TRAE SOLO CN installed and logged in
 2. Feishu authorization completed inside TraeWork on that machine
 3. Official `lark-cli` on PATH (or discoverable as a system/agent copy)
-4. Python 3.10+ and `pip install -r skills/feishu-traework-local-auth/scripts/requirements.txt`
+4. Python 3.10+; install `scripts/requirements.txt` with the same interpreter that will run the helper
 
 Then install from a local Feishu-Next checkout:
 
@@ -40,7 +40,7 @@ python3 "$SCRIPT" run -- whoami --json
 
 Success: TraeWork `appId`, `identity=user`, `available=true`. Later business commands use `run -- <lark-cli args>`. Do not print the token.
 
-Windows: session path and `run` are implemented; PowerShell should use `run`, not `export-env`. Windows has not been live-tested.
+Windows: session path, PowerShell `status` / `whoami` / `run`, GBK code page, Chinese identity output, and a real Drive search have been live-tested with Python 3.10.11 and `lark-cli` 1.0.68. Use `run`, not `export-env`.
 
 ## Layers
 
@@ -53,7 +53,7 @@ Windows: session path and `run` are implemented; PowerShell should use `run`, no
 ## Dependencies
 
 - Trae client logged in; TraeWork Feishu authorization completed on this computer
-- `lark-cli` on this machine (system or agent environment; newest version wins)
+- `lark-cli` on this machine (PATH, system, npm/pnpm, or agent environment; newest runnable version wins)
 - Python 3.10+ and `pycryptodome` or `cryptography`
 
 ## Skill files (runtime only)

@@ -14,10 +14,12 @@ Child inject also unsets `LARK_APP_ID`, `LARK_APP_SECRET`, `LARKSUITE_CLI_APP_SE
 
 | Variable | Role |
 | --- | --- |
-| `TRAEWORK_LARK_CLI` | Preferred exact binary override |
+| `TRAEWORK_LARK_CLI` | Preferred working command name or exact-file override |
 | `LARK_CLI` | Same override if `TRAEWORK_LARK_CLI` is unset |
 
-If neither override is set, the helper scans `PATH`, system locations, and the current agent/node environment, then uses `newest_version`.
+Quoted paths, `~`, and environment variables are expanded. If neither override
+is set, the helper scans `PATH`, common system/package-manager locations, and
+the current agent/node environment, then uses `newest_version`.
 
 ## TraeWork client ids (public, not secrets)
 

@@ -29,7 +29,7 @@
     },
     {
       "name": "feishu-traework-local-auth",
-      "description": "Optional advanced plugin to reuse this machine's user-owned TraeWork Feishu authorization with official lark-cli environment credentials. Not the default Feishu Next auth path.",
+      "description": "Optional plugin to reuse this machine's user-owned TraeWork Feishu authorization with official lark-cli environment credentials. Not the default Feishu Next auth path.",
       "author": {
         "name": "BlueSkyXN",
         "url": "https://github.com/BlueSkyXN"

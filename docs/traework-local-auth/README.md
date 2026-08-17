@@ -2,7 +2,7 @@
 
 本目录是 **仓库级说明**，与 Codex skill 本体分离。
 
-## Layers
+## 文档分层
 
 | Layer | 路径 | 写什么 |
 | --- | --- | --- |
@@ -22,7 +22,7 @@ Skill 安装后应能独立完成 `about` / `status` / `whoami` / `run`；本目
 
 ## 一句话定位（对外可用）
 
-> 若你已在 **本机** Trae 客户端完成飞书（TraeWork）授权，可选插件可在 **同一台机器** 上，用 **当前系统用户自己的** 登录会话，取回你已同意给 TraeWork 的短时飞书用户令牌，并通过官方 `lark-cli` 的环境变量凭据模式注入，供本机 Agent 使用。  
+> 若你已在 **本机** Trae 客户端完成飞书（TraeWork）授权，可选插件可在 **同一台机器** 上，用 **当前系统用户自己的** 登录会话，取回你已同意给 TraeWork 的短时飞书用户令牌，并通过官方 `lark-cli` 的环境变量凭据模式注入，供本机 Agent 使用。
 > 这不是默认鉴权路径；不是共享给第三方的公共应用；长期多人请自建飞书应用。
 
 ## 插件与脚本
@@ -39,7 +39,7 @@ Skill 安装后应能独立完成 `about` / `status` / `whoami` / `run`；本目
 发布前检查：
 
 1. 对方有自己的 Trae 登录和 TraeWork 飞书同意
-2. 对方自己安装 `lark-cli` 和 `pycryptodome`
+2. 对方自己安装 `lark-cli`，并用同一个 Python 补齐 `pycryptodome`（或已有 `cryptography`）
 3. 用 `about` / `status` / `whoami` / `run` 自检
 4. 不要附带任何 token、`storage.json` 或 JWT 文件
 5. 许可证是 `GPL-3.0-only`；分发时保留版权声明和许可证标识

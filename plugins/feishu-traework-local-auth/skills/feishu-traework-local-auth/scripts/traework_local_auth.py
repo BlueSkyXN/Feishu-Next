@@ -24,6 +24,7 @@ from __future__ import annotations
 import argparse
 import base64
 import hashlib
+import importlib.util
 import json
 import os
 import re
@@ -85,6 +86,117 @@ GET_THIRD_PARTY_PATHS = (
 )
 
 
+def json_for_output(
+    value: Any,
+    *,
+    indent: int | None = 2,
+    encoding: str | None = None,
+) -> str:
+    """Keep JSON readable when possible and valid on legacy Windows consoles."""
+    text = json.dumps(value, ensure_ascii=False, indent=indent)
+    target_encoding = encoding or sys.stdout.encoding or "utf-8"
+    try:
+        text.encode(target_encoding)
+    except (LookupError, UnicodeEncodeError):
+        return json.dumps(value, ensure_ascii=True, indent=indent)
+    return text
+
+
+def text_for_output(text: str, *, encoding: str | None = None) -> str:
+    """Avoid UnicodeEncodeError on legacy Windows terminal code pages."""
+    target_encoding = encoding or sys.stdout.encoding or "utf-8"
+    try:
+        text.encode(target_encoding)
+    except (LookupError, UnicodeEncodeError):
+        return text.encode(target_encoding, errors="backslashreplace").decode(target_encoding)
+    return text
+
+
+def print_json(
+    value: Any,
+    *,
+    indent: int | None = 2,
+    stream: Any = None,
+) -> None:
+    target = stream or sys.stdout
+    encoding = getattr(target, "encoding", None) or "utf-8"
+    print(json_for_output(value, indent=indent, encoding=encoding), file=target)
+
+
+def _expanded_path_value(raw: str) -> str:
+    value = (raw or "").strip()
+    if len(value) >= 2 and value[0] == value[-1] and value[0] in {"'", '"'}:
+        value = value[1:-1]
+    return os.path.expandvars(os.path.expanduser(value))
+
+
+def crypto_backend() -> str | None:
+    try:
+        from Crypto.Cipher import AES as _AES  # type: ignore
+        from Crypto.Util.Padding import unpad as _unpad  # type: ignore
+
+        _ = _AES, _unpad
+        return "pycryptodome"
+    except Exception:  # noqa: BLE001 - a broken optional wheel should not block fallback.
+        pass
+    try:
+        from cryptography.hazmat.primitives.ciphers import Cipher as _Cipher
+        from cryptography.hazmat.primitives.padding import PKCS7 as _PKCS7
+
+        _ = _Cipher, _PKCS7
+        return "cryptography"
+    except Exception:  # noqa: BLE001 - report no usable optional backend.
+        return None
+
+
+def module_available(name: str) -> bool:
+    try:
+        return importlib.util.find_spec(name) is not None
+    except (ImportError, ValueError):
+        return False
+
+
+def runtime_status() -> dict[str, Any]:
+    requirements = Path(__file__).resolve().with_name("requirements.txt")
+    return {
+        "python_executable": sys.executable,
+        "python_version": ".".join(str(part) for part in sys.version_info[:3]),
+        "platform": sys.platform,
+        "stdout_encoding": sys.stdout.encoding or "",
+        "in_virtualenv": sys.prefix != sys.base_prefix,
+        "pip_available": module_available("pip"),
+        "crypto_backend": crypto_backend(),
+        "requirements_file": str(requirements),
+        "dependency_install_argv": [
+            sys.executable,
+            "-m",
+            "pip",
+            "install",
+            "-r",
+            str(requirements),
+        ],
+    }
+
+
+def _path_is_file(path: Path) -> bool:
+    try:
+        return path.is_file()
+    except OSError:
+        return False
+
+
+def file_status(path: Path) -> dict[str, Any]:
+    entry: dict[str, Any] = {"path": str(path), "exists": False, "size": 0}
+    try:
+        entry["exists"] = path.is_file()
+        if entry["exists"]:
+            entry["size"] = path.stat().st_size
+    except OSError as exc:
+        entry["error"] = type(exc).__name__
+        entry["detail"] = str(exc)
+    return entry
+
+
 def _sha512(data: bytes) -> bytes:
     return hashlib.sha512(data).digest()
 
@@ -109,14 +221,20 @@ def _aes_cbc_decrypt(key: bytes, iv: bytes, ciphertext: bytes) -> bytes:
     try:
         from Crypto.Cipher import AES  # type: ignore
         from Crypto.Util.Padding import unpad  # type: ignore
-
+    except Exception:  # noqa: BLE001 - try the supported fallback backend.
+        pass
+    else:
         plain = AES.new(key, AES.MODE_CBC, iv).decrypt(ciphertext)
         return unpad(plain, 16)
-    except ImportError:
-        pass
-    from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
-    from cryptography.hazmat.primitives.padding import PKCS7
-    from cryptography.hazmat.backends import default_backend
+    try:
+        from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
+        from cryptography.hazmat.primitives.padding import PKCS7
+        from cryptography.hazmat.backends import default_backend
+    except Exception as exc:  # noqa: BLE001 - emit one actionable dependency error.
+        raise RuntimeError(
+            "missing AES backend for the current Python interpreter; install "
+            f"pycryptodome with: {sys.executable} -m pip install pycryptodome"
+        ) from exc
 
     decryptor = Cipher(algorithms.AES(key), modes.CBC(iv), backend=default_backend()).decryptor()
     padded = decryptor.update(ciphertext) + decryptor.finalize()
@@ -185,6 +303,31 @@ def _lark_cli_names() -> tuple[str, ...]:
     return ("lark-cli",)
 
 
+def _lark_cli_kind_rank(path: str) -> int:
+    name = Path(path).name.lower()
+    if name.endswith(".exe"):
+        return 0
+    if name == "lark-cli":
+        return 1
+    if name.endswith(".cmd"):
+        return 2
+    if name.endswith(".bat"):
+        return 3
+    return 4
+
+
+def _prefer_native_lark_cli(path: Path) -> Path:
+    """Windows: use lark-cli.exe when it sits next to a shim. Unix has no .exe."""
+    if sys.platform != "win32":
+        return path
+    if path.name.lower().endswith(".exe"):
+        return path
+    sibling = path.with_name("lark-cli.exe")
+    if _path_is_file(sibling):
+        return sibling
+    return path
+
+
 def _realpath(path: Path) -> Path:
     try:
         return path.expanduser().resolve()
@@ -229,10 +372,10 @@ def _iter_path_lark_cli() -> list[Path]:
     for directory in os.get_exec_path():
         if not directory:
             continue
-        root = Path(directory)
+        root = Path(_expanded_path_value(directory))
         for name in names:
             candidate = root / name
-            if candidate.is_file():
+            if _path_is_file(candidate):
                 found.append(candidate)
     return found
 
@@ -246,6 +389,8 @@ def _npm_global_bin() -> Path | None:
             [npm, "prefix", "-g"],
             capture_output=True,
             text=True,
+            encoding="utf-8",
+            errors="replace",
             timeout=4,
         )
     except (OSError, subprocess.SubprocessError):
@@ -253,7 +398,7 @@ def _npm_global_bin() -> Path | None:
     prefix = (proc.stdout or "").strip()
     if proc.returncode != 0 or not prefix:
         return None
-    root = Path(prefix)
+    root = Path(_expanded_path_value(prefix))
     return root if sys.platform == "win32" else root / "bin"
 
 
@@ -261,12 +406,17 @@ def _well_known_lark_cli_dirs() -> list[Path]:
     home = Path.home()
     dirs: list[Path] = []
     if sys.platform == "win32":
-        for key in ("APPDATA", "LOCALAPPDATA", "ProgramFiles", "ProgramFiles(x86)"):
+        appdata = os.environ.get("APPDATA")
+        if appdata:
+            dirs.append(Path(_expanded_path_value(appdata)) / "npm")
+        local_appdata = os.environ.get("LOCALAPPDATA")
+        if local_appdata:
+            base = Path(_expanded_path_value(local_appdata))
+            dirs.extend((base / "npm", base / "pnpm"))
+        for key in ("ProgramFiles", "ProgramFiles(x86)"):
             raw = os.environ.get(key)
-            if not raw:
-                continue
-            base = Path(raw)
-            dirs.extend((base / "npm", base / "nodejs"))
+            if raw:
+                dirs.append(Path(_expanded_path_value(raw)) / "nodejs")
     else:
         dirs.extend(
             (
@@ -279,18 +429,18 @@ def _well_known_lark_cli_dirs() -> list[Path]:
             )
         )
 
-    for key in ("FNM_MULTISHELL_PATH", "NVM_BIN"):
+    for key in ("FNM_MULTISHELL_PATH", "NVM_BIN", "NVM_SYMLINK", "PNPM_HOME"):
         raw = os.environ.get(key)
         if raw:
-            dirs.append(Path(raw))
+            dirs.append(Path(_expanded_path_value(raw)))
 
     fnm_dir = os.environ.get("FNM_DIR")
     if fnm_dir:
-        alias = Path(fnm_dir) / "aliases" / "default"
+        alias = Path(_expanded_path_value(fnm_dir)) / "aliases" / "default"
         dirs.extend((alias, alias / "bin"))
     nvm_dir = os.environ.get("NVM_DIR")
     if nvm_dir:
-        dirs.append(Path(nvm_dir) / "current" / "bin")
+        dirs.append(Path(_expanded_path_value(nvm_dir)) / "current" / "bin")
 
     npm_bin = _npm_global_bin()
     if npm_bin is not None:
@@ -309,6 +459,8 @@ def _probe_lark_cli(path: Path, source: str) -> dict[str, Any]:
             [str(path), "--version"],
             capture_output=True,
             text=True,
+            encoding="utf-8",
+            errors="replace",
             timeout=5,
         )
         blob = (proc.stdout or proc.stderr or "").strip()
@@ -347,6 +499,7 @@ def select_lark_cli_candidate(
     runnable.sort(
         key=lambda item: (
             tuple(-part for part in item["version_tuple"]),
+            _lark_cli_kind_rank(str(item.get("path", ""))),
             LARK_CLI_SOURCE_TIEBREAK.get(str(item.get("source")), 9),
         )
     )
@@ -354,23 +507,30 @@ def select_lark_cli_candidate(
 
 
 def resolve_lark_cli() -> dict[str, Any]:
-    override = (os.environ.get("TRAEWORK_LARK_CLI") or os.environ.get("LARK_CLI") or "").strip()
+    override_raw = os.environ.get("TRAEWORK_LARK_CLI") or os.environ.get("LARK_CLI") or ""
+    override = _expanded_path_value(override_raw)
     queued: list[tuple[str, Path]] = []
     if override:
-        queued.append(("override", Path(override).expanduser()))
+        override_path = Path(override)
+        if not _path_is_file(override_path):
+            discovered = shutil.which(override)
+            if discovered:
+                override_path = Path(discovered)
+        override_path = _prefer_native_lark_cli(override_path)
+        queued.append(("override", override_path))
     for path in _iter_path_lark_cli():
-        queued.append(("path", path))
+        queued.append(("path", _prefer_native_lark_cli(path)))
     names = _lark_cli_names()
     for directory in _well_known_lark_cli_dirs():
         for name in names:
             path = directory / name
-            if path.is_file():
-                queued.append((classify_lark_cli_source(path), path))
+            if _path_is_file(path):
+                queued.append((classify_lark_cli_source(path), _prefer_native_lark_cli(path)))
 
     seen: set[str] = set()
     candidates: list[dict[str, Any]] = []
     for source, path in queued:
-        if source == "override" and not path.is_file():
+        if source == "override" and not _path_is_file(path):
             candidates.append(
                 {
                     "path": str(path),
@@ -384,7 +544,7 @@ def resolve_lark_cli() -> dict[str, Any]:
                 }
             )
             continue
-        if not path.is_file():
+        if not _path_is_file(path):
             continue
         key = str(_realpath(path))
         if sys.platform == "win32":
@@ -424,20 +584,20 @@ def trae_user_data_roots() -> list[Path]:
     elif system == "win32":
         appdata = os.environ.get("APPDATA")
         if appdata:
-            roots.append(Path(appdata))
+            roots.append(Path(_expanded_path_value(appdata)))
         # Fallback if APPDATA missing
         roots.append(home / "AppData" / "Roaming")
     else:
         # Linux and other Unix: Electron/VS Code style config dir
         xdg = os.environ.get("XDG_CONFIG_HOME")
         if xdg:
-            roots.append(Path(xdg))
+            roots.append(Path(_expanded_path_value(xdg)))
         roots.append(home / ".config")
     # de-dupe while preserving order
     seen: set[str] = set()
     out: list[Path] = []
     for r in roots:
-        key = str(r)
+        key = os.path.normcase(str(_realpath(r)))
         if key in seen:
             continue
         seen.add(key)
@@ -450,7 +610,7 @@ def default_storage_paths() -> list[Path]:
     out: list[Path] = []
     env = os.environ.get("TRAE_STORAGE_JSON")
     if env:
-        out.append(Path(env).expanduser())
+        out.append(Path(_expanded_path_value(env)))
     for root in trae_user_data_roots():
         for name in TRAE_APP_SUPPORT_NAMES:
             out.append(root / name / "User" / "globalStorage" / "storage.json")
@@ -464,7 +624,7 @@ def jwt_file_candidates() -> list[Path]:
     out: list[Path] = []
     env = os.environ.get("TRAE_JWT_TOKEN_PATH")
     if env:
-        out.append(Path(env).expanduser())
+        out.append(Path(_expanded_path_value(env)))
     for name in names:
         out.append(home / name / "trae-jwt-token")
     return out
@@ -546,10 +706,10 @@ def load_trae_jwt() -> tuple[str, dict[str, Any]]:
     def try_scheme_b() -> tuple[str, dict[str, Any]] | None:
         last_err: Exception | None = None
         for path in default_storage_paths():
-            if not path.is_file():
-                continue
             try:
-                storage = json.loads(path.read_text(encoding="utf-8"))
+                if not path.is_file():
+                    continue
+                storage = json.loads(path.read_text(encoding="utf-8-sig"))
                 if not isinstance(storage, dict):
                     continue
                 key, auth = resolve_auth_blob(storage)
@@ -592,9 +752,12 @@ def load_trae_jwt() -> tuple[str, dict[str, Any]]:
         return None
 
     def try_scheme_a() -> tuple[str, dict[str, Any]] | None:
+        last_err: Exception | None = None
         for path in jwt_file_candidates():
-            if path.is_file() and path.stat().st_size > 0:
-                token = path.read_text(encoding="utf-8").strip()
+            try:
+                if not path.is_file() or path.stat().st_size <= 0:
+                    continue
+                token = path.read_text(encoding="utf-8-sig").strip()
                 if token:
                     return token, {
                         "source": "jwt_file",
@@ -604,7 +767,13 @@ def load_trae_jwt() -> tuple[str, dict[str, Any]]:
                         "token_len": len(token),
                         "token_prefix": token[:8] + "…",
                     }
-        errors.append("scheme_A: no trae-jwt-token file")
+            except Exception as exc:  # noqa: BLE001
+                last_err = exc
+                continue
+        if last_err is not None:
+            errors.append(f"scheme_A: {last_err}")
+        else:
+            errors.append("scheme_A: no trae-jwt-token file")
         return None
 
     order: list[str]
@@ -657,12 +826,12 @@ def get_third_party_token(jwt: str, host: str) -> dict[str, Any]:
                 "Accept": "application/json",
                 "x-cloudide-token": jwt,
                 "Authorization": f"Bearer {jwt}",
-                "User-Agent": "Feishu-Next-local-traework-bridge/0.2",
+                "User-Agent": "Feishu-Next-local-traework-bridge/0.2.1",
             },
         )
         try:
             with urllib.request.urlopen(req, timeout=30) as resp:
-                raw = resp.read().decode("utf-8")
+                raw = resp.read().decode("utf-8-sig")
                 data = json.loads(raw) if raw else {}
                 return {"url": url, "http_status": resp.status, "data": data}
         except urllib.error.HTTPError as exc:
@@ -741,8 +910,8 @@ def brand_for_app(app_id: str) -> str:
 # --- commands ----------------------------------------------------------------
 
 ABOUT_FALLBACK = (
-    "Feishu TraeWork Local Auth: reuse your own TraeWork Feishu authorization "
-    "on this machine with official lark-cli. See references/about.md."
+    "Feishu TraeWork 本地授权：复用本机已授予 TraeWork 的飞书授权，"
+    "每次按需换取短时用户访问令牌并交给官方 lark-cli。详见 references/about.md。"
 )
 
 
@@ -752,38 +921,37 @@ def about_path() -> Path:
 
 def about_text() -> str:
     path = about_path()
-    if path.is_file():
-        return path.read_text(encoding="utf-8")
+    if _path_is_file(path):
+        try:
+            return path.read_text(encoding="utf-8")
+        except (OSError, UnicodeError):
+            pass
     return ABOUT_FALLBACK + "\n"
 
 
 def cmd_about(_: argparse.Namespace) -> int:
     text = about_text()
-    sys.stdout.write(text if text.endswith("\n") else text + "\n")
+    text = text if text.endswith("\n") else text + "\n"
+    sys.stdout.write(text_for_output(text))
     return 0
 
 
 def cmd_status(_: argparse.Namespace) -> int:
     lark = resolve_lark_cli()
     report: dict[str, Any] = {
+        "runtime": runtime_status(),
         "jwt_files": [],
         "storage_files": [],
         "lark_cli": lark.get("selected"),
         "lark_cli_resolution": lark,
     }
     for p in jwt_file_candidates():
-        report["jwt_files"].append(
-            {
-                "path": str(p),
-                "exists": p.is_file(),
-                "size": p.stat().st_size if p.is_file() else 0,
-            }
-        )
+        report["jwt_files"].append(file_status(p))
     for p in default_storage_paths():
-        entry: dict[str, Any] = {"path": str(p), "exists": p.is_file()}
-        if p.is_file():
+        entry = file_status(p)
+        if entry["exists"]:
             try:
-                storage = json.loads(p.read_text(encoding="utf-8"))
+                storage = json.loads(p.read_text(encoding="utf-8-sig"))
                 keys = [k for k in storage if k.startswith(AUTH_KEY_PREFIX)]
                 entry["auth_keys"] = keys
                 if DEFAULT_AUTH_KEY in storage and isinstance(storage[DEFAULT_AUTH_KEY], str):
@@ -803,7 +971,7 @@ def cmd_status(_: argparse.Namespace) -> int:
     except Exception as exc:  # noqa: BLE001
         report["jwt_load"] = {"ok": False, "error": str(exc)}
 
-    print(json.dumps(report, ensure_ascii=False, indent=2))
+    print_json(report)
     return 0 if report.get("jwt_load", {}).get("ok") else 2
 
 
@@ -814,7 +982,7 @@ def cmd_decrypt_check(_: argparse.Namespace) -> int:
         **meta,
         "jwt_sha256_8": hashlib.sha256(jwt.encode()).hexdigest()[:8],
     }
-    print(json.dumps(out, ensure_ascii=False, indent=2))
+    print_json(out)
     return 0
 
 
@@ -848,20 +1016,16 @@ def _fetch_bundle() -> tuple[str, dict[str, Any], dict[str, Any], dict[str, Any]
 
 def cmd_fetch_uat(_: argparse.Namespace) -> int:
     _, meta, _, bundle = _fetch_bundle()
-    print(
-        json.dumps(
-            {
-                "ok": True,
-                "jwt_meta": {
-                    k: meta[k]
-                    for k in meta
-                    if k not in ("token_prefix",)  # still ok, no secret
-                },
-                "third_party": bundle,
+    print_json(
+        {
+            "ok": True,
+            "jwt_meta": {
+                k: meta[k]
+                for k in meta
+                if k not in ("token_prefix",)  # still ok, no secret
             },
-            ensure_ascii=False,
-            indent=2,
-        )
+            "third_party": bundle,
+        }
     )
     return 0
 
@@ -915,9 +1079,15 @@ def cmd_export_env(_: argparse.Namespace) -> int:
         "unset LARK_APP_ID LARK_APP_SECRET LARKSUITE_CLI_APP_SECRET 2>/dev/null || true",
     ]
     # diagnostics to stderr only
-    print(
-        json.dumps({"ok": True, "app_id": bundle["app_id"], "brand": bundle["brand"], "uat_len": bundle["uat_len"]}, ensure_ascii=False),
-        file=sys.stderr,
+    print_json(
+        {
+            "ok": True,
+            "app_id": bundle["app_id"],
+            "brand": bundle["brand"],
+            "uat_len": bundle["uat_len"],
+        },
+        indent=None,
+        stream=sys.stderr,
     )
     print("\n".join(lines))
     return 0
@@ -930,11 +1100,26 @@ def cmd_whoami(args: argparse.Namespace) -> int:
     lark = resolve_lark_cli()
     selected = lark.get("selected")
     if not selected or not lark.get("runnable"):
-        print(json.dumps({"ok": False, "error": "lark-cli not found", "lark_cli_resolution": lark}, ensure_ascii=False, indent=2))
+        print_json(
+            {
+                "ok": False,
+                "error": "lark-cli not found",
+                "lark_cli_resolution": lark,
+            }
+        )
         return 3
 
     cmd = [selected, "whoami", "--json"] if not args.plain else [selected, "whoami"]
-    proc = subprocess.run(cmd, env=env, capture_output=True, text=True)
+    # lark-cli emits UTF-8 JSON on every supported platform. Explicitly decode
+    # it as UTF-8 so Windows locales such as GBK do not break on Chinese names.
+    proc = subprocess.run(
+        cmd,
+        env=env,
+        capture_output=True,
+        text=True,
+        encoding="utf-8",
+        errors="replace",
+    )
     out: dict[str, Any] = {
         "ok": proc.returncode == 0,
         "returncode": proc.returncode,
@@ -954,7 +1139,7 @@ def cmd_whoami(args: argparse.Namespace) -> int:
     }
     # try parse whoami json for safe fields
     try:
-        who = json.loads(proc.stdout)
+        who = json.loads(proc.stdout.lstrip("\ufeff"))
         if isinstance(who, dict):
             safe = {
                 k: who.get(k)
@@ -974,36 +1159,42 @@ def cmd_whoami(args: argparse.Namespace) -> int:
             out["whoami_safe"] = safe
     except Exception:
         pass
-    print(json.dumps(out, ensure_ascii=False, indent=2))
+    print_json(out)
     return 0 if proc.returncode == 0 else 4
 
 
 def cmd_run(args: argparse.Namespace) -> int:
     lark_args = normalize_lark_run_args(list(getattr(args, "lark_args", []) or []))
     if not lark_args:
-        print(
-            json.dumps(
-                {
-                    "ok": False,
-                    "error": "missing lark-cli arguments",
-                    "usage": "python3 traework_local_auth.py run -- <lark-cli args>",
-                    "example": "python3 traework_local_auth.py run -- drive +search --as user --page-size 3",
-                },
-                ensure_ascii=False,
-                indent=2,
-            ),
-            file=sys.stderr,
+        print_json(
+            {
+                "ok": False,
+                "error": "missing lark-cli arguments",
+                "usage": "<python> traework_local_auth.py run -- <lark-cli args>",
+                "example": (
+                    "<python> traework_local_auth.py run -- drive +search "
+                    "--as user --page-size 3"
+                ),
+            },
+            stream=sys.stderr,
         )
         return 2
     forbidden = env_mode_forbidden_reason(lark_args)
     if forbidden:
-        print(json.dumps({"ok": False, "error": forbidden}, ensure_ascii=False, indent=2), file=sys.stderr)
+        print_json({"ok": False, "error": forbidden}, stream=sys.stderr)
         return 2
 
     lark = resolve_lark_cli()
     selected = lark.get("selected")
     if not selected or not lark.get("runnable"):
-        print(json.dumps({"ok": False, "error": "lark-cli not found", "lark_cli_resolution": lark}, ensure_ascii=False, indent=2), file=sys.stderr)
+        print_json(
+            {
+                "ok": False,
+                "error": "lark-cli not found",
+                "lark_cli_resolution": lark,
+            },
+            stream=sys.stderr,
+        )
         return 3
 
     _, _meta, uat, bundle = _fetch_bundle()
@@ -1013,7 +1204,9 @@ def cmd_run(args: argparse.Namespace) -> int:
 
 
 def build_parser() -> argparse.ArgumentParser:
-    p = argparse.ArgumentParser(description="Reuse local TraeWork Feishu authorization with lark-cli")
+    p = argparse.ArgumentParser(
+        description="Reuse local TraeWork Feishu authorization with lark-cli"
+    )
     sub = p.add_subparsers(dest="cmd", required=True)
 
     sub.add_parser("about", help="print the built-in self-introduction (no secrets)")
@@ -1045,7 +1238,7 @@ def main(argv: list[str] | None = None) -> int:
         if args.cmd == "fetch-uat":
             return cmd_fetch_uat(args)
         if args.cmd == "resolve-lark-cli":
-            print(json.dumps(resolve_lark_cli(), ensure_ascii=False, indent=2))
+            print_json(resolve_lark_cli())
             return 0
         if args.cmd == "export-env":
             return cmd_export_env(args)
@@ -1055,7 +1248,7 @@ def main(argv: list[str] | None = None) -> int:
             return cmd_run(args)
         return 1
     except Exception as exc:  # noqa: BLE001
-        print(json.dumps({"ok": False, "error": str(exc), "type": type(exc).__name__}, ensure_ascii=False, indent=2))
+        print_json({"ok": False, "error": str(exc), "type": type(exc).__name__})
         return 1
 
 
