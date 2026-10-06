@@ -7,30 +7,39 @@
 plugin package -> marketplace install -> skill workflow
 ```
 
-它不是另一个飞书 OpenAPI SDK，也不复制官方 `lark-cli` 内置 skills。它的定位是把常见的
-跨步骤飞书任务沉淀为可复用 Codex Skills，并始终以当前安装的 `lark-cli` 作为运行时真相源。
+**Next 是飞书工作流能力层：把你的一系列飞书操作串成完整任务，而不是只调用一次官方 skill。**
+它沉淀个人玩法和经验，管理步骤依赖、输入输出、执行身份、授权、证据、验证和失败恢复。
+官方 `lark-suite` 负责官方能力整合与技能清单压缩；Next 支持导航到 suite，但保留整个工作流的状态。
+它不是另一个 OpenAPI SDK，不复制官方正文或资源快照，始终以当前安装的 `lark-cli` 为运行时真相源。
 
-`Feishu Next 0.3.0` 已使用本机安装的 `lark-cli 1.0.83` 验证，并对照
+当前源码版本为 **0.7.0**，包含 **8 个 Skill**（Router 加 7 个具体工作流）；加上独立鉴权插件，全仓 **9 个 Skill**。
+`feishu-workflow-router` 保留在 Next，不另建独立 Router 插件。从工作区提炼的公共能力保留文档格式对齐、思维笔记大纲和通用 Base 快照；5 个业务专用技能及项目快照实现仍在原项目维护，详见 [迁移说明](docs/skill-migration.md)。
+
+历史 `Feishu Next 0.3.0` 已使用本机安装的 `lark-cli 1.0.83` 验证，并对照
 `lark-cli 1.0.86` 源码审计，但不硬锁某个精确版本。源码审计不能替代安装态验证；router
 会动态读取当前 skills、domain help、shortcut help 和 flags；旧版或新版 CLI
 只要核心 runtime surface 校验通过即可使用。
 
 ## 迁移定位
 
-`Feishu Next` 是插件化后的 Feishu 入口层，用来替代把 Feishu guide 单独放在
-`~/.codex/skills` 的做法。安装插件后，默认从
-`$feishu-next:feishu-workflow-router` 开始：
+安装插件后，从 `$feishu-next:feishu-workflow-router` 组织完整任务，也可以直接选择具体玩法：
 
-- router 负责识别飞书 URL / token / 用户意图，选择官方 `lark-*` skill 或本插件 sub-skill。
-- 官方 `lark-*` skill 仍通过 `lark-cli skills read ...` 实时读取，不内置、不复制到本仓库。
-- 本插件只沉淀跨步骤工作流、证据留存、备份回滚、验证门槛和安全边界。
-- 旧的全局 `lark-cli-guide` 可以保留为过渡备份；插件安装并可发现后，常规使用不再需要它。
+- Router 既介绍官方“能做什么”，也导航你的工作流；按需读取云文档与知识库、表格数据、消息协作、演示应用、认证扩展五类能力地图。
+- 判断依据是能力和附加方法，不是单步/多步：官方已有完整文档创作、权限治理等流程时直接复用，需要 Next 的保真、证据、恢复或跨任务状态时再用 Next。
+- 8 个技能继续平铺。每个玩法都提到 Router：缺执行上下文、能力不明或用户要求串联任务时按需使用；已处于流程中则沿用有效上下文，交回真实产物，不重复分派自己。身份、目标或授权改变仍需复核。
+- 对多步任务，Next 保持步骤依赖、经过验证的产物、授权检查点和部分失败状态；不会把整个任务转给 suite 后就结束。
+- 当前客户端确实暴露 `lark-suite` 时，导航到其入口，再按需读取 `references/<skill-name>/GUIDE.md`。不把内部指南当独立技能调用。
+- 仍兼容独立 `lark-*` 技能，以及 `lark-cli skills read ...`。CLI 的技能清单不是客户端安装清单，不据此声称 suite 已安装。
+- 只有用户明确指挥 AI 时才更新插件、CLI 或技能布局。普通任务不安装 suite、不自动更新、不移除全局技能。
+- 旧的全局 `lark-cli-guide` 可以保留为过渡备份；Next 不会擅自修改 `~/.codex/skills` 等用户目录。
+
+例如“归档聊天、据此整理文档、最后发送结果”，Next 负责串起这几个步骤；官方指南分别提供 IM、Doc 等具体操作方法。
+只读或草稿请求不会自动扩大成创建、发布或发送。详细分工见 [工作流架构](docs/workflow-architecture.md)。
 
 ## 适合做什么
 
-- 路由飞书任务到正确的官方 `lark-*` skill。
-- 路由原生 Markdown、思维笔记、审批、Miaoda/Spark、应用 slash commands、
-  会中能力和官方 meeting/standup workflows。
+- 将多项飞书操作组成有步骤依赖、证据和完成检查的工作流。
+- 导航到官方 suite、独立技能或运行时说明；直接复用匹配的官方工作流，不重复包装原子 API。
 - 只读导出飞书文档、表格、多维表格和幻灯片。
 - 盘点飞书文档中的图片、附件、画板和嵌入资源。
 - 归档飞书 IM 聊天记录、消息搜索结果、线程和资源。
@@ -49,6 +58,9 @@ plugins/feishu-next/                   # 默认工作流插件
     feishu-doc-asset-map/
     feishu-im-chat-archive/
     feishu-whiteboard-ops/
+    feishu-doc-format-align/
+    feishu-mindnote-outline/
+    feishu-base-snapshot-maintain/
 plugins/feishu-traework-local-auth/    # 可选：复用本机 TraeWork 飞书授权
 docs/traework-local-auth/              # 上述可选插件的项目文档
 ```
@@ -126,15 +138,18 @@ lark-cli auth status --json --verify
 - 遇到没有 matching skill 的能力时，先检查 domain/shortcut help；正式 command
   也不存在时，再读 `lark-openapi-explorer` 并通过 `schema` / `api` 探索。
 
-## 首批 Skills
+## Skills 清单
 
 | Skill | 用途 |
 | --- | --- |
-| `feishu-workflow-router` | 根据 URL、资源类型和用户意图选择正确 workflow |
+| `feishu-workflow-router` | 选择与编排多步任务，保持执行上下文，并导航到官方 suite |
 | `feishu-readonly-doc-export` | 只读导出 doc/docx/sheet/bitable/slides |
 | `feishu-doc-asset-map` | 盘点文档图片、附件、画板、内嵌表格和 Base |
 | `feishu-im-chat-archive` | 分页归档 IM 消息、线程、资源和 evidence 字段 |
 | `feishu-whiteboard-ops` | 安全查看、修改、重绘、恢复画板，含 `.drawio` 同步边界 |
+| `feishu-doc-format-align` | 对齐文档排版，逐段/逐格核对正文未变 |
+| `feishu-mindnote-outline` | 维护已有思维笔记的大纲和父子关系 |
+| `feishu-base-snapshot-maintain` | 周月快照、跨周比较与部分失败续做 |
 
 可选独立插件：
 
@@ -153,11 +168,15 @@ python3 scripts/validate_lark_runtime.py
 
 ```bash
 make validate
+make validate-privacy
+make validate-privacy-history
 make validate-runtime
 make validate-all
 ```
 
-`validate` 保持确定性的静态/plugin/skill 校验；`validate-runtime` 只执行本地
+`validate` 先执行本地隐私检查，再运行静态/plugin/skill 校验与回归测试。隐私检查覆盖 Git 候选文件和暂存区，要求本机 Gitleaks；缺失时默认失败，不自动安装。`validate-privacy-history` 另外检查本地可达历史。`/local/` 由仓库级忽略保护；发布不能压缩整个目录，必须按审核提交清单生成并检查最终 ZIP，详见 [隐私与发布规则](docs/privacy-and-release.md)。
+
+`validate-runtime` 只执行本地
 `lark-cli skills read` 和 `--help` 探测，不认证、不调用飞书 API、不写远端资源；
 它验证核心 skill/reference，并把其他 Router skill 的“已读取且非空”与 catalog
 的“已发现”数量分开报告；裁剪发行版缺少的非核心 skill 只告警，不假装成 scope
@@ -185,6 +204,12 @@ python3 ~/.codex/skills/.system/skill-creator/scripts/quick_validate.py \
 ```
 
 其余 skill 目录同样用 `quick_validate.py` 校验。
+
+## 命名与版本
+
+详见 [命名与版本规则](docs/skill-governance.md)、[技能清单与旧名映射](skill-catalog.json) 和 [变更记录](CHANGELOG.md)。插件版本存 manifest，单技能版本存 `metadata.version`，均采用完整 SemVer；技能名称保持稳定的 `feishu-*` kebab-case，不带 `-v2` 等版本后缀。Router 为 `0.7.0`；协作规则澄清后，文档格式与思维笔记为 `0.1.1`、通用快照为 `0.1.2`、资产盘点为 `0.3.2`，导出、聊天归档与白板为 `0.3.1`。
+
+5 个业务专用技能和项目快照实现已恢复原项目正常目录，前两项公共能力保留本地兼容入口。公开收录以可复用飞书操作能力为标准，不因业务流程读写飞书就纳入；通用快照不依赖原项目脚本，也不提供一键同步器。源码提交与 PR 不代表已更新安装缓存或发布版本；本次未执行远端业务操作。
 
 ## 维护原则
 
