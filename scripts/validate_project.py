@@ -10,6 +10,8 @@ import subprocess
 import sys
 from pathlib import Path
 
+from skill_governance import valid_version, validate_repository
+
 
 ROOT = Path(__file__).resolve().parents[1]
 PLUGIN = ROOT / "plugins" / "feishu-next"
@@ -53,6 +55,11 @@ HYGIENE_FILES = (
     ROOT / "README.md",
     ROOT / "README_CN.md",
     ROOT / "Makefile",
+    ROOT / "skill-catalog.json",
+    ROOT / "CHANGELOG.md",
+    ROOT / "docs" / "skill-governance.md",
+    ROOT / "docs" / "skill-migration.md",
+    ROOT / "docs" / "workflow-architecture.md",
 )
 HYGIENE_DIRS = (
     PLUGIN,
@@ -149,8 +156,8 @@ def validate_plugin_manifest() -> None:
     if manifest.get("name") != "feishu-next":
         fail("plugin manifest name must be feishu-next")
     version = manifest.get("version", "")
-    if not re.fullmatch(r"0\.3\.0\+codex\.\d{14}", version):
-        fail("plugin manifest version must match 0.3.0+codex.YYYYMMDDHHMMSS")
+    if not valid_version(version):
+        fail("plugin manifest version must be strict SemVer")
     default_prompts = manifest.get("interface", {}).get("defaultPrompt", [])
     if not isinstance(default_prompts, list) or not all(isinstance(item, str) for item in default_prompts):
         fail("plugin manifest interface.defaultPrompt must be a string array")
@@ -165,13 +172,8 @@ def validate_plugin_manifest() -> None:
 
 def validate_skill_surface() -> None:
     skills_dir = PLUGIN / "skills"
-    expected = {
-        "feishu-workflow-router",
-        "feishu-readonly-doc-export",
-        "feishu-doc-asset-map",
-        "feishu-im-chat-archive",
-        "feishu-whiteboard-ops",
-    }
+    catalog = load_json(ROOT / "skill-catalog.json")
+    expected = set(catalog["plugins"]["feishu-next"]["skills"])
     actual = {p.name for p in skills_dir.iterdir() if p.is_dir()}
     if actual != expected:
         fail(f"unexpected skill surface: {sorted(actual)}")
@@ -284,8 +286,10 @@ def validate_router_migration() -> None:
         "not execution authorization": "router must forbid treating suggestion wording as UI write authorization",
         "bounded to the single proven gap": "router must bound UI fallback to the proven CLI gap",
     }
+    documents_map = PLUGIN / "skills/feishu-workflow-router/references/capabilities-documents.md"
+    navigation_text = router_text + "\n" + (documents_map.read_text() if documents_map.is_file() else "")
     for marker, message in required_router_markers.items():
-        if marker not in router_text:
+        if marker not in navigation_text:
             fail(message)
 
     manifest = load_json(PLUGIN / ".codex-plugin" / "plugin.json")
@@ -303,8 +307,8 @@ def validate_router_migration() -> None:
     if not feishu_entries:
         fail("marketplace must include feishu-next for router migration checks")
     entry_description = feishu_entries[0].get("description", "")
-    if "standalone Feishu guide" not in entry_description:
-        fail("marketplace entry must advertise replacement of standalone Feishu guide skills")
+    if "workflow" not in entry_description.lower() or "lark-suite" not in entry_description:
+        fail("marketplace entry must describe workflow orchestration and official suite navigation")
 
     readme_text = (PLUGIN / "README.md").read_text()
     root_readme_cn = (ROOT / "README_CN.md").read_text()
@@ -312,6 +316,80 @@ def validate_router_migration() -> None:
         fail("plugin README must explain plugin-first migration and official skill boundary")
     if "旧的全局 `lark-cli-guide`" not in root_readme_cn:
         fail("README_CN must document standalone lark-cli-guide retirement path")
+
+
+def validate_workflow_architecture() -> None:
+    router_dir = PLUGIN / "skills" / "feishu-workflow-router"
+    router = (router_dir / "SKILL.md").read_text()
+    required = {
+        "workflow-orchestration.md": (
+            "step / depends_on", "inputs / outputs", "effect / authorization",
+            "uncertain outcome", "Read back before", "verified checkpoints",
+        ),
+        "official-suite-navigation.md": (
+            "lark-suite", "references/<skill-name>/GUIDE.md", "separate",
+            "lark-cli skills read <skill>", "does not prove suite is",
+            "user explicitly", "Next neither installs suite",
+        ),
+    }
+    for name, markers in required.items():
+        path = router_dir / "references" / name
+        if not path.is_file() or f"references/{name}" not in router:
+            fail(f"Router must include and link {name}")
+        text = path.read_text()
+        for marker in markers:
+            if marker not in text:
+                fail(f"{name} is missing workflow contract: {marker}")
+    if "without redispatching" not in router or "Next retains ownership" not in router:
+        fail("Router must retain workflow ownership without recursive redispatch")
+    if "Step count does not decide ownership" not in router:
+        fail("Router must distinguish added value from step count")
+    maps = {
+        "capabilities-documents.md": ("lark-doc", "lark-drive", "lark-wiki", "lark-markdown"),
+        "capabilities-data.md": ("lark-sheets", "lark-base"),
+        "capabilities-collaboration.md": (
+            "lark-im", "lark-mail", "lark-calendar", "lark-meeting", "lark-task",
+            "lark-approval", "lark-contact", "lark-attendance", "lark-okr",
+            "lark-workflow-meeting-summary", "lark-workflow-standup-report",
+        ),
+        "capabilities-visual-apps.md": ("lark-slides", "lark-whiteboard", "lark-apps"),
+        "capabilities-platform.md": ("lark-shared", "lark-event", "lark-openapi-explorer", "lark-skill-maker"),
+    }
+    for name, guides in maps.items():
+        path = router_dir / "references" / name
+        if not path.is_file() or f"references/{name}" not in router:
+            fail(f"Router must link its capability map: {name}")
+        text = path.read_text()
+        if text.startswith("---\n") or "official-suite-navigation.md" not in text:
+            fail(f"{name} must be an internal map linked to current official loading rules")
+        for guide in guides:
+            if guide not in text:
+                fail(f"{name} is missing official capability coverage: {guide}")
+    handoff_path = router_dir / "references/playbook-handoff.md"
+    if not handoff_path.is_file() or "references/playbook-handoff.md" not in router:
+        fail("Router must link shared playbook handoff rules")
+    handoff = handoff_path.read_text()
+    for marker in ("Direct invocation", "must not redispatch", "Result handoff", "not blanket"):
+        if marker not in handoff:
+            fail(f"playbook handoff is missing rule: {marker}")
+    for skill_dir in sorted((PLUGIN / "skills").iterdir()):
+        if not skill_dir.is_dir() or skill_dir == router_dir:
+            continue
+        text = (skill_dir / "SKILL.md").read_text()
+        for marker in ("## Router cooperation", "without redispatching", "reuse", "revalidate", "Return "):
+            if marker.lower() not in text.lower():
+                fail(f"{skill_dir.name} is missing Router cooperation: {marker}")
+        link = "../feishu-workflow-router/references/playbook-handoff.md"
+        if link not in text or not (skill_dir / link).is_file():
+            fail(f"{skill_dir.name} must link the sibling Router handoff rules")
+    if (ROOT / "plugins" / "feishu-router").exists():
+        fail("Router must stay inside Next, not a separate plugin")
+    if (PLUGIN / "vendor").exists() or list((PLUGIN / "skills").glob("lark-*")):
+        fail("Next must not bundle official skills or their resource snapshot")
+    for path in PLUGIN.rglob("*"):
+        if path.is_file() and path.suffix in TEXT_EXTENSIONS:
+            if "$feishu-router:" in path.read_text(errors="ignore"):
+                fail(f"{path.relative_to(ROOT)} contains a cancelled Router namespace")
 
 
 def validate_execution_context_contract() -> None:
@@ -538,24 +616,14 @@ def validate_runtime_compatibility_content() -> None:
         fail("plugin manifest must separate the lark-cli runtime and source baselines")
 
     marketplace = load_json(MARKETPLACE)
-    feishu_plugin_desc = next(
-        (
-            item.get("description", "")
-            for item in marketplace.get("plugins", [])
-            if item.get("name") == "feishu-next"
-        ),
-        "",
-    )
-    marketplace_descriptions = [
-        marketplace.get("description", ""),
-        feishu_plugin_desc,
+    descriptions = [marketplace.get("description", "")] + [
+        entry.get("description", "") for entry in marketplace.get("plugins", [])
+        if entry.get("name") == "feishu-next"
     ]
-    if not all(
-        "runtime-validated against lark-cli 1.0.83" in text
-        and "source-audited against lark-cli 1.0.86" in text
-        for text in marketplace_descriptions
-    ):
-        fail("marketplace descriptions must separate runtime and source baselines")
+    for text in descriptions:
+        if "1.0.83" in text or "1.0.86" in text:
+            if "runtime-validated against lark-cli 1.0.83" not in text or "source-audited against lark-cli 1.0.86" not in text:
+                fail("marketplace historical version claims must distinguish runtime and source validation")
 
     runtime_validator = (ROOT / "scripts" / "validate_lark_runtime.py").read_text()
     for marker in (
@@ -618,8 +686,8 @@ def validate_traework_local_auth_plugin() -> None:
     if manifest.get("skills") != "./skills/":
         fail("feishu-traework-local-auth skills path must be ./skills/")
     version = manifest.get("version", "")
-    if not re.fullmatch(r"0\.2\.1\+codex\.\d{14}", version):
-        fail("feishu-traework-local-auth version must match 0.2.1+codex.YYYYMMDDHHMMSS")
+    if not valid_version(version):
+        fail("feishu-traework-local-auth version must be strict SemVer")
     long_description = manifest.get("interface", {}).get("longDescription", "")
     for marker in ("Optional", "TraeWork", "lark-cli", "LARKSUITE_CLI"):
         if marker not in long_description and marker.lower() not in long_description.lower():
@@ -893,10 +961,14 @@ def validate_codex_validators(*, allow_missing: bool) -> bool:
 
 def main(*, allow_missing_codex_validators: bool = False) -> None:
     validate_marketplace()
+    governance_errors = validate_repository(ROOT)
+    if governance_errors:
+        fail("skill governance: " + "; ".join(governance_errors))
     validate_plugin_manifest()
     validate_skill_surface()
     validate_whiteboard_architecture()
     validate_router_migration()
+    validate_workflow_architecture()
     validate_traework_local_auth_plugin()
     validate_execution_context_contract()
     validate_runtime_compatibility_content()

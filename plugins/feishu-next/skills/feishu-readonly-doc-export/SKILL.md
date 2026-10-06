@@ -2,8 +2,8 @@
 name: feishu-readonly-doc-export
 description: Use when exporting Feishu/Lark cloud documents read-only to local PDF, Word, Markdown, XLSX, CSV, PPTX, or .base from a doc, wiki, or Drive URL without editing remote content.
 metadata:
-  version: "0.3"
-  updated: "2026-08-12"
+  version: "0.3.1"
+  updated: "2026-10-06"
 ---
 
 # Feishu read-only document export
@@ -11,13 +11,23 @@ metadata:
 Use this workflow for exports only. Do not edit, move, delete, publish, or
 change permissions unless the user separately asks and confirms.
 
-This skill may be invoked directly. Before any business call, use
-`$feishu-next:feishu-workflow-router` to build and verify the complete
-`lark_execution` contract. Let the Router discover internal profile/App fields
-from runtime and caller metadata before asking the user; do not ask an ordinary
-user for a raw profile name or App ID. In every command below, replace
-`<profile>` and `<identity>` with that verified contract and preserve them
-across export task continuations.
+## Router cooperation
+
+This playbook can run directly. Consult `$feishu-next:feishu-workflow-router`
+for missing verified context, unclear official capability selection, or a
+user-requested cross-skill extension. Before business calls, establish or reuse
+a matching verified `lark_execution` contract without redispatching this active
+playbook. Revalidate changed targets, profile/identity, scope or write authority;
+reuse is not blanket approval. Preserve `--profile '<profile>'` and
+`--as '<identity>'`; do not ask an ordinary
+user for a raw profile name or App ID.
+
+For context checks or workflow handoffs, follow
+[the shared rules](../feishu-workflow-router/references/playbook-handoff.md).
+Load only required official guidance through the observed suite/separate/runtime
+path; reuse already-current reads while retaining command and validation checks.
+
+Return verified output paths, source type, export ticket/status and any incomplete download to the caller; an export is not authorization to publish or send it.
 
 ## Required runtime reads
 

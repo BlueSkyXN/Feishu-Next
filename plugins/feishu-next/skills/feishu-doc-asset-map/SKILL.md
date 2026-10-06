@@ -2,8 +2,8 @@
 name: feishu-doc-asset-map
 description: Use when inventorying images, attachments, whiteboards, embeds, and download candidates in a Feishu/Lark document. Do not claim Docx cover metadata is present from normal document fetches.
 metadata:
-  version: "0.3"
-  updated: "2026-08-12"
+  version: "0.3.2"
+  updated: "2026-10-06"
 ---
 
 # Feishu document asset map
@@ -11,13 +11,23 @@ metadata:
 Use this workflow to inspect a document and produce a structured asset map. The
 goal is usually a local inventory, not remote mutation.
 
-This skill may be invoked directly. Before any business call, use
-`$feishu-next:feishu-workflow-router` to build and verify the complete
-`lark_execution` contract. Let the Router discover internal profile/App fields
-from runtime and caller metadata before asking the user; do not ask an ordinary
-user for a raw profile name or App ID. In every command below, replace
-`<profile>` and `<identity>` with that verified contract; preserve both when
-following an embedded token into another domain.
+## Router cooperation
+
+This playbook can run directly. Consult `$feishu-next:feishu-workflow-router`
+for missing verified context, unclear official capability selection, or a
+user-requested cross-skill extension. Before business calls, establish or reuse
+a matching verified `lark_execution` contract without redispatching this active
+playbook. Revalidate changed targets, profile/identity, scope or write authority;
+reuse is not blanket approval. Preserve `--profile '<profile>'` and
+`--as '<identity>'`; do not ask an ordinary
+user for a raw profile name or App ID.
+
+For context checks or workflow handoffs, follow
+[the shared rules](../feishu-workflow-router/references/playbook-handoff.md).
+Load only required official guidance through the observed suite/separate/runtime
+path; reuse already-current reads while retaining command and validation checks.
+
+Return the classified asset map, resource references and unresolved coverage to the caller; discovering an embedded resource does not authorize reading or modifying its full contents.
 
 ## Required runtime reads
 
@@ -58,9 +68,13 @@ lark-cli skills read lark-doc references/lark-doc-mindnote.md
      --as '<identity>' \
      --doc '<url-or-token>' \
      --detail with-ids \
-     --doc-format xml \
-     --format json
+     --doc-format xml
    ```
+
+   Preserve the complete JSON response, including `data.document.content` and
+   `data.document.reference_map`; asset attributes may be in the sidecar rather
+   than inline. `--doc-format` selects the content representation. Current
+   `docs +fetch` has no `--format` flag; verify help instead of adding one.
 
 3. Extract and classify:
 
@@ -75,7 +89,7 @@ lark-cli skills read lark-doc references/lark-doc-mindnote.md
    | `<synced_reference src-token="..." src-block-id="...">` | Synced document reference | record source document and block IDs; use `docs +fetch` on the source only when the user needs its content |
    | Mindnote URL/token or mindnote resource signal | Mindnote | read `lark-doc` mindnote guidance, then use `lark-cli mindnotes ...` for node data |
    | Explicit Docx cover request | Docx cover binary | read the current cover reference, then use `docs +resource-download --type cover`; this downloads bytes and is not part of an ordinary asset inventory |
-   | `vc-node-id` | Meeting note/transcript | switch to `lark-note` |
+   | `vc-node-id` | Meeting note/transcript | switch to current `lark-meeting` guidance |
 
 4. Download only when the user asks for bytes or previews. Otherwise map tokens
    and links without extra resource requests. Do not infer cover presence from

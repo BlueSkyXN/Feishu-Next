@@ -1,8 +1,8 @@
 interface:
   display_name: "Feishu Workflow Router"
-  short_description: "Route Feishu lark-cli tasks to official skills or workflows."
+  short_description: "Explain Feishu capabilities and choose official or Next methods."
   brand_color: "#00B96B"
-  default_prompt: "Use $feishu-next:feishu-workflow-router to route this Feishu/Lark lark-cli task."
+  default_prompt: "Use $feishu-next:feishu-workflow-router to plan this Feishu workflow and select Next or official suite steps."
 
 policy:
   allow_implicit_invocation: true
