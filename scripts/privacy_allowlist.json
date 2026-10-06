@@ -1,0 +1,71 @@
+{
+  "schema_version": 1,
+  "entries": [
+    {
+      "path": "cli-mcp-server/scripts/contract-tools.mjs",
+      "rule": "lark-identity",
+      "sha256": "33b3b500c6bc3f863beb664fa17507a79207ee733c88ba757540a3b0d2b0dbb0",
+      "reason": "Synthetic expected App ID used only by local MCP contract tests; not an account identifier."
+    },
+    {
+      "path": "cli-mcp-server/scripts/smoke-auth.mjs",
+      "rule": "lark-identity",
+      "sha256": "33b3b500c6bc3f863beb664fa17507a79207ee733c88ba757540a3b0d2b0dbb0",
+      "reason": "Synthetic expected App ID in the fake CLI used by the local auth smoke test."
+    },
+    {
+      "path": "cli-mcp-server/scripts/smoke-auth.mjs",
+      "rule": "bearer-literal",
+      "sha256": "37b5ac3a0fe66b0b2676ec00c15c410bbc902c2c6776f81c419c4fe2d1a02040",
+      "reason": "Fixed synthetic bearer fixture for the loopback smoke-test server, not a production credential."
+    },
+    {
+      "path": "docs/traework-local-auth/architecture.md",
+      "rule": "lark-identity",
+      "sha256": "f5ff24d635b6b0c7c9e502c0731385419bc8f520864bd3f3ea91051415584713",
+      "reason": "TraeWork CN public client identifier, explicitly documented as non-secret; no App Secret or user identity."
+    },
+    {
+      "path": "docs/traework-local-auth/architecture.md",
+      "rule": "lark-identity",
+      "sha256": "e0fcec1334db49a68fdebf25601bffe5ad5cc66e9f8a31328f1664358fcab081",
+      "reason": "TraeWork international public client identifier, explicitly documented as non-secret."
+    },
+    {
+      "path": "plugins/feishu-traework-local-auth/skills/feishu-traework-local-auth/references/about.md",
+      "rule": "lark-identity",
+      "sha256": "f5ff24d635b6b0c7c9e502c0731385419bc8f520864bd3f3ea91051415584713",
+      "reason": "Public TraeWork CN client identifier describing the optional authorization integration."
+    },
+    {
+      "path": "plugins/feishu-traework-local-auth/skills/feishu-traework-local-auth/references/env-contract.md",
+      "rule": "lark-identity",
+      "sha256": "f5ff24d635b6b0c7c9e502c0731385419bc8f520864bd3f3ea91051415584713",
+      "reason": "Public TraeWork CN client identifier required by the documented environment contract."
+    },
+    {
+      "path": "plugins/feishu-traework-local-auth/skills/feishu-traework-local-auth/references/env-contract.md",
+      "rule": "lark-identity",
+      "sha256": "e0fcec1334db49a68fdebf25601bffe5ad5cc66e9f8a31328f1664358fcab081",
+      "reason": "Public TraeWork international client identifier required by the documented environment contract."
+    },
+    {
+      "path": "plugins/feishu-traework-local-auth/skills/feishu-traework-local-auth/scripts/traework_local_auth.py",
+      "rule": "lark-identity",
+      "sha256": "f5ff24d635b6b0c7c9e502c0731385419bc8f520864bd3f3ea91051415584713",
+      "reason": "Public TraeWork CN client identifier in the integration implementation; not an App Secret."
+    },
+    {
+      "path": "plugins/feishu-traework-local-auth/skills/feishu-traework-local-auth/scripts/traework_local_auth.py",
+      "rule": "lark-identity",
+      "sha256": "e0fcec1334db49a68fdebf25601bffe5ad5cc66e9f8a31328f1664358fcab081",
+      "reason": "Public TraeWork international client identifier in the integration implementation."
+    },
+    {
+      "path": "scripts/validate_project.py",
+      "rule": "lark-identity",
+      "sha256": "f5ff24d635b6b0c7c9e502c0731385419bc8f520864bd3f3ea91051415584713",
+      "reason": "Validator checks that the optional integration retains its public TraeWork CN client identifier."
+    }
+  ]
+}
