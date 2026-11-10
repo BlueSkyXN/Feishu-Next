@@ -224,7 +224,7 @@ def validate_skill_surface() -> None:
 
 
 def validate_whiteboard_architecture() -> None:
-    """Keep whiteboard routing as one workflow skill plus a draw.io reference."""
+    """Keep board operations/recovery separate from visual design and draw.io detail."""
 
     skill_dir = PLUGIN / "skills" / "feishu-whiteboard-ops"
     skill_text = (skill_dir / "SKILL.md").read_text()
@@ -240,8 +240,8 @@ def validate_whiteboard_architecture() -> None:
     ):
         if marker not in skill_text:
             fail(f"feishu-whiteboard-ops is missing required workflow guardrail: {marker}")
-    if "Keep one Feishu Next whiteboard skill" not in skill_text:
-        fail("feishu-whiteboard-ops must document the single-skill whiteboard boundary")
+    if "Keep one Feishu Next whiteboard operations skill" not in skill_text or "feishu-whiteboard-semantic-cards" not in skill_text:
+        fail("feishu-whiteboard-ops must separate operations/recovery from visual design")
     if "Official skill relationship" not in skill_text or "lark-whiteboard" not in skill_text:
         fail("feishu-whiteboard-ops must document official lark-whiteboard authority")
 

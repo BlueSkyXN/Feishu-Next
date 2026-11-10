@@ -5,14 +5,14 @@ Feishu/Lark playbooks and experience. It connects operations with step order,
 dependencies, identity, evidence, backups and quality standards, rather than
 forwarding an entire task to one official skill.
 
-Current source version: **0.7.0**, with **eight skills**: the bundled
-`$feishu-next:feishu-workflow-router` plus seven playbooks. Router selects a
+Current source version: **0.11.0**, with **eleven skills**: the bundled
+`$feishu-next:feishu-workflow-router` plus ten playbooks. Router selects a
 playbook or composes multiple steps and navigates to official `lark-suite` for
 atomic capabilities. Next retains the enclosing workflow state; suite owns
 its official guide aggregation and skill-list compression. There is no separate
 Router plugin, copied official snapshot or automatic installation dependency.
 
-## Two navigation paths, eight flat skills
+## Two navigation paths, eleven flat skills
 
 Router explains what official Feishu capabilities can do through five on-demand
 maps: documents/knowledge, tables/data, communication/collaboration, visuals/apps,
@@ -23,7 +23,7 @@ Official basic operations and existing official workflows can be selected direct
 Next methods add evidence, fidelity, backup/recovery or cross-task state; step
 count is not the boundary. A capability question needs no login or remote access.
 
-All eight skill entries remain flat. Every playbook links to
+All eleven skill entries remain flat. Every playbook links to
 [shared Router cooperation](skills/feishu-workflow-router/references/playbook-handoff.md):
 missing context or a requested extension can consult Router; an already matching
 verified context is reused without redispatch. Changed scope, identity or write
@@ -35,13 +35,23 @@ authority is revalidated. Results and unresolved states return to the caller.
   verified outputs, preserve authorization checkpoints and navigate to suite.
 - `feishu-readonly-doc-export`: export documents, sheets, Base and slides with
   artifact and completion evidence.
+- `feishu-slides-preview-to-pdf`: capture a viewable slide deck through the
+  signed-in browser, verify page order and image fidelity, and assemble an
+  image-based PDF when the user requests this method.
 - `feishu-doc-asset-map`: inventory document images, attachments, whiteboards and
   embedded resources without losing resource identity.
 - `feishu-im-chat-archive`: archive chat history, threads and resources with
   pagination and evidence-preserving boundaries.
 - `feishu-whiteboard-ops`: inspect, edit, redraw and recover whiteboards with
   raw rollback baselines and validation, including `.drawio` publishing.
-- `feishu-doc-format-align`: align document formatting while preserving text.
+- `feishu-whiteboard-semantic-cards`: apply the Semantic Card Diagrams style
+  using semantic colors, modular cards and clear relationships, generate local
+  editable SVG and inspect previews before handing off board operations.
+- `feishu-doc-format-align`: apply a reference document or explicit style rules,
+  preserving material boundaries and text with paragraph/cell comparisons.
+- `feishu-doc-format-repair`: diagnose and repair misplaced headings, material
+  boundaries and confirmed paste residue from one or multiple sources; verify
+  each authorized structural and textual change.
 - `feishu-mindnote-outline`: maintain an existing Mindnote outline and hierarchy.
 - `feishu-base-snapshot-maintain`: check, plan, resume and verify generic
   weekly/monthly Base snapshots without rewriting history.
@@ -55,20 +65,31 @@ See [public/private boundaries](../../docs/skill-migration.md).
 
 ## Whiteboard boundary
 
-Keep one Next whiteboard playbook, `feishu-whiteboard-ops`. Atomic board commands
-come from official `lark-whiteboard` guidance through Router. The playbook owns
+`feishu-whiteboard-semantic-cards` owns the Semantic Card Diagrams style,
+its layouts, a standard-library Python SVG kit and local preview checks. It adapts to the content instead of
+requiring a fixed category count or palette meaning.
+
+Keep one Next whiteboard operations playbook, `feishu-whiteboard-ops`. Atomic board commands
+come from official `lark-whiteboard` guidance through Router. This playbook owns
 target confirmation, backup, merge/recovery strategy, render/check gates and
 post-write verification. `.drawio` publishing is its conditional reference,
-not a separate public skill.
+not a separate public skill. Design-to-publish tasks pass the checked source,
+preview, target and authorized scope from design to operations; remote changes
+still require the operations playbook's own preflight and readback.
 
 ## Dependencies and manual install
 
-The official `lark-cli` must be installed. Router verifies the selected runtime
+For CLI-backed workflows, the official `lark-cli` must be installed. Router verifies the selected runtime
 and freezes profile/App/identity context before business calls; do not silently
 fall back to default identity if the Router is unavailable. Pure local planning
 can continue without remote access, but business execution must stop at a missing
 dependency. A directly invoked playbook can request Router preflight and then
 continue without redispatching itself.
+
+Explicit slide-preview capture uses the selected browser's login state and
+does not require a CLI profile. Verify the browser identity, document and capture
+scope. If the workflow switches to CLI queries or official export, establish the
+CLI execution contract first; browser login is not CLI authentication.
 
 When suite is exposed by the host, read its selected
 `references/<skill-name>/GUIDE.md` from the actual installed location. Otherwise
@@ -92,7 +113,9 @@ Start from the workflow Router or invoke a playbook directly:
 ```text
 $feishu-next:feishu-workflow-router
 $feishu-next:feishu-readonly-doc-export
+$feishu-next:feishu-slides-preview-to-pdf
 $feishu-next:feishu-whiteboard-ops
+$feishu-next:feishu-whiteboard-semantic-cards
 $feishu-next:feishu-doc-format-align
 ```
 
@@ -113,7 +136,10 @@ guide navigation as needed, and no business calls or unrequested sends.
 Preserve each playbook's read-before-write, explicit identity, pagination,
 evidence and backup rules. Prepare the exact write with `--dry-run`; satisfy
 runtime high-risk approval before `--yes`. Never publish private URLs, content
-or credentials. A UI fallback requires a proven CLI gap and explicit authorization.
+or credentials. A UI fallback in a CLI workflow requires a proven CLI gap and
+explicit authorization. The dedicated slide-preview workflow may start directly
+when the user requests browser capture; it does not permit browser writes or
+broader fallback in other workflows.
 
 The original 0.3.0 workflow baseline was runtime-validated against the installed
 `lark-cli 1.0.83` and source-audited against `lark-cli 1.0.86`. Those historical

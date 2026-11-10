@@ -11,7 +11,7 @@
   "plugins": [
     {
       "name": "feishu-next",
-      "description": "Feishu Next connects a user's Feishu operations into complete workflows with step dependencies, explicit identity, evidence and validation. Its bundled workflow router explains official capabilities and selects basic usage, a reusable Next playbook or composition through official lark-suite without copying official skills. Eight flat public skills preserve direct invocation and non-recursive context handoffs.",
+      "description": "Feishu Next connects a user's Feishu operations into complete workflows with step dependencies, explicit identity, evidence and validation. Its bundled workflow router explains official capabilities and selects basic usage, a reusable Next playbook or composition through official lark-suite without copying official skills. Eleven flat public skills preserve direct invocation and non-recursive context handoffs.",
       "author": {
         "name": "BlueSkyXN",
         "url": "https://github.com/BlueSkyXN"

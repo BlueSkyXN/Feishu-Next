@@ -2,8 +2,8 @@
 name: feishu-whiteboard-ops
 description: Use when viewing, editing, recovering, or syncing a Feishu/Lark document whiteboard, including publishing a local .drawio source while keeping rollback discipline.
 metadata:
-  version: "0.3.1"
-  updated: "2026-10-06"
+  version: "0.3.3"
+  updated: "2026-11-10"
 ---
 
 # Feishu whiteboard ops
@@ -92,8 +92,12 @@ skill is available, read it before editing/exporting `.drawio` files.
 
 ## Mode routing
 
-Keep one Feishu Next whiteboard skill. Do not create or route to a separate
-Feishu-specific draw.io skill inside this plugin. Use this split:
+Keep one Feishu Next whiteboard operations skill, `feishu-whiteboard-ops`.
+For the Semantic Card Diagrams style and its content/layout design, use
+`$feishu-next:feishu-whiteboard-semantic-cards`, then resume here with its inspected
+source and preview. This workflow retains target resolution, rollback baselines,
+write strategy and remote validation. Do not create or route to a separate
+Feishu-specific draw.io operations skill inside this plugin. Use this split:
 
 | Signal | Action |
 | --- | --- |

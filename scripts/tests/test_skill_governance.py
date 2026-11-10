@@ -190,7 +190,11 @@ class GovernanceTests(unittest.TestCase):
         root = Path(__file__).resolve().parents[2]
         skills = root / "plugins/feishu-next/skills"
         entries = list(skills.rglob("SKILL.md"))
-        self.assertEqual(8, len(entries))
+        catalog = json.loads((root / "skill-catalog.json").read_text())
+        self.assertEqual(
+            set(catalog["plugins"]["feishu-next"]["skills"]),
+            {path.parent.name for path in entries},
+        )
         self.assertTrue(all(len(path.relative_to(skills).parts) == 2 for path in entries))
         for path in entries:
             if path.parent.name == "feishu-workflow-router":

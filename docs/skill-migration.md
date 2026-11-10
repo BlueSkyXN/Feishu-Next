@@ -14,6 +14,7 @@
 | insight-background-evidence | 已撤下 feishu-insight-evidence | 原项目完整维护，不随 Next 分发 |
 | job-ai-transition-evidence | 已撤下 feishu-job-ai-transition | 原项目完整维护，不随 Next 分发 |
 | weekly-ai-weekly-report | 已撤下 feishu-ai-weekly-report | 原项目完整维护，不随 Next 分发 |
+| ppt-preview-to-pdf | feishu-slides-preview-to-pdf | 飞书 Slides 截图转 PDF 的公共方法与合成脚本；旧独立入口归档，本地调用可链接公共源码 |
 
 ## 为什么这样划分
 
@@ -41,6 +42,10 @@
 
 ## 兼容与版本
 
-当前 Feishu Next 工作流插件为 0.7.0，含 Router 加七个平铺工作流，共 8 个 Skill；加上独立鉴权插件全仓共 9 个。此前未发布的 Router 独立拆分已取消，原调用名 `$feishu-next:feishu-workflow-router` 保持不变。Router 0.7.0 增加官方能力地图，导航官方基础使用、Next 玩法或组合任务，不内嵌官方技能。其余工作流对 Router 的引用改为按需协作与上下文复用，各自提升 PATCH，版本详见 metadata 与 CHANGELOG。五个已撤下名称不回到公共清单或 Router，项目快照旧名也不登记为公共别名。
+当前 Feishu Next 工作流插件为 0.11.0，含 Router 加十个平铺工作流，共 11 个 Skill；加上独立鉴权插件全仓共 12 个。语义卡片图解 `feishu-whiteboard-semantic-cards` 为 0.2.0，保留 `feishu-doc-format-repair` 0.1.0 和 0.8.0 加入的 `feishu-slides-preview-to-pdf` 0.1.0；旧独立名称 `ppt-preview-to-pdf` 仅记录迁移映射，客户端不会自动提供别名，插件调用名为 `$feishu-next:feishu-slides-preview-to-pdf`。原件哈希与归档定位保留在本地迁移记录，不进入公共包。
+
+画板风格 Skill 由 `feishu-whiteboard-design` 改名为 `feishu-whiteboard-semantic-cards`，调用方将旧调用替换为 `$feishu-next:feishu-whiteboard-semantic-cards`。清单的 `legacy_names` 记录旧名用于追溯；客户端不自动提供旧名别名，公共包只保留新目录。此次命名迁移保留绘图组件与设计流程。
+
+此前未发布的 Router 独立拆分已取消，原调用名 `$feishu-next:feishu-workflow-router` 保持不变。Router 0.7.0 增加的官方能力地图与按需上下文协作继续保留，0.8.0 增加显式浏览器截图路由，0.9.0 增加文档格式修复入口，格式对齐升为 0.1.2；两者区分样式对齐与损伤修复，各自包含完整的文档编辑与验收规则。0.10.0 新增画板设计入口，画板运维升为 0.3.2 说明设计稿交接；其余工作流版本不变，详见 metadata 与 CHANGELOG。五个已撤下名称不回到公共清单或 Router，项目快照旧名也不登记为公共别名。
 
 源码提交与 PR 不等于安装更新或版本发布。保持现有 Codex marketplace 协议与名称；本次没有更新客户端安装或执行飞书业务写入。

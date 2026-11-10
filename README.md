@@ -7,7 +7,7 @@ explicit identity, evidence, validation and partial-failure recovery—not anoth
 copy of official API instructions.
 
 Start with `$feishu-next:feishu-workflow-router` when choosing capabilities or
-composing a task, or invoke a matching playbook directly. All eight skills remain
+composing a task, or invoke a matching playbook directly. All eleven skills remain
 flat public entries; internal references do not become extra skills. The Router
 explains official capabilities through five on-demand domain maps and stays
 inside Next:
@@ -25,15 +25,16 @@ inside Next:
   Router for missing context, capability ambiguity or requested extensions, and
   returns verified outputs without redispatching itself or repeating valid reads.
 
-Current source version: **0.7.0**, with **eight skills** (Router plus seven
-playbooks): exports, document assets, chat archives, whiteboard/draw.io operations,
-text-preserving formatting, Mindnote outlines and generic Base snapshots.
+Current source version: **0.11.0**, with **eleven skills** (Router plus ten
+playbooks): exports, slide-preview capture to PDF, document assets, chat archives,
+whiteboard visual design and whiteboard/draw.io operations, text-preserving formatting and paste repair, Mindnote outlines and
+generic Base snapshots.
 Five organization-specific workflows remain private; project-specific snapshot
 code is separate from the generic public method. Private adapters, resource maps
 and business data are not distributed.
 
 The optional **feishu-traework-local-auth 0.2.1** plugin contributes one more
-public skill (**nine total**) and reuses this machine's user-owned TraeWork
+public skill (**twelve total**) and reuses this machine's user-owned TraeWork
 Feishu authorization with official CLI environment credentials. It is not the
 default auth path; see its [README](plugins/feishu-traework-local-auth/README.md)
 and [project docs](docs/traework-local-auth/).
@@ -42,6 +43,19 @@ and [project docs](docs/traework-local-auth/).
 when the user explicitly requests it. Next never installs suite, converts
 separate/suite layouts, removes global skills or updates itself automatically.
 Reading local runtime help does not modify an installation.
+
+Use `$feishu-next:feishu-whiteboard-semantic-cards` to apply the **Semantic Card
+Diagrams** style: organize materials with semantic colors, modular cards and
+clear relationship layouts, build
+editable local SVG, and inspect rendered previews. It includes a standard-library
+Python component kit and synthetic examples. The existing whiteboard operations
+playbook owns remote targeting, backups, writes and recovery.
+
+For an explicitly requested screenshot PDF of a viewable slide deck, use
+`$feishu-next:feishu-slides-preview-to-pdf`. This browser workflow uses the
+selected browser's login state and validates page order, canvas bounds, image
+encoding and pixel size. CLI identity is required only if a step uses the CLI.
+The output is an image-based PDF; it preserves visible watermarks.
 
 Before committing, run `make validate-privacy`; before a release, also run
 `make validate-privacy-history` and check the final ZIP against a reviewed commit.

@@ -1,0 +1,8 @@
+interface:
+  display_name: "飞书文档格式修复"
+  short_description: "Repair document hierarchy and confirmed paste residue."
+  brand_color: "#2B7FFF"
+  default_prompt: "Use $feishu-next:feishu-doc-format-repair for this task; start read-only and diagnose structural damage or paste residue."
+
+policy:
+  allow_implicit_invocation: true

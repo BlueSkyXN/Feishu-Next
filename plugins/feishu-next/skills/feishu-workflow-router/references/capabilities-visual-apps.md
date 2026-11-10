@@ -10,7 +10,7 @@
 
 **边界：**本地 PPTX 导入或飞书 slides 导出遵循 `lark-drive`；Docx 内独立白板是 Whiteboard；HTML 幻灯片/可交互原型可能属于 Apps 的创意开发，而不是原生 Slides。只要求本地 PPTX 时使用宿主实际可用的文件制作能力，不默认创建远程资源。
 
-**Next 增量：**带导出证据的本地交付可用 `$feishu-next:feishu-readonly-doc-export`。暂无独立 Next 幻灯片创作玩法，直接复用官方创作与验证方法；跨来源内容收集和后续交付由 Router 按需组织。
+**Next 增量：**带导出证据的本地交付可用 `$feishu-next:feishu-readonly-doc-export`。用户明确要求浏览器逐页截图转 PDF，或已接受官方导出失败后的截图方案时，使用 `$feishu-next:feishu-slides-preview-to-pdf`，保留可见水印，验证页序、画布边界、图片编码与像素尺寸；输出不含原始文字层。暂无独立 Next 幻灯片创作玩法，直接复用官方创作与验证方法；跨来源内容收集和后续交付由 Router 按需组织。
 
 ## 文档内白板 — `lark-whiteboard`
 
@@ -21,6 +21,8 @@
 **边界：**下载白板缩略图不等于读取可编辑结构；读取正文不等于已拿到完整白板内容。支持的表示和第三方工具依赖必须按当前指南核对。
 
 **Next 增量：**需要修改/重绘/恢复时的备份基线、局部合并、校验回读，或 `.drawio` 主稿发布与同步，选 `$feishu-next:feishu-whiteboard-ops`。它是独立玩法；draw.io 与恢复等分支保留在该玩法的 references，不再新注册技能。简单查看或单次导出按官方方法即可。
+
+需要采用“语义卡片图解”风格，以语义配色、模块化卡片和清晰关系设计总览、流程、泳道或矩阵时，选 `$feishu-next:feishu-whiteboard-semantic-cards`。它产出本地可编辑 SVG 和经目检的预览；本地设计无需认证。需要读取线上参考或发布设计时交接 whiteboard-ops，继续执行目标定位、基线备份、授权与写后验证。
 
 ## 妙搭 / Spark 应用 — `lark-apps`
 

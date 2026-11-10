@@ -8,7 +8,7 @@
 - 不在仓库根保留裸 `skills/` 目录；共享能力必须进入插件包。
 - `feishu-workflow-router` 留在 Next，选择和编排本插件工作流，也支持导航到官方 `lark-suite`。官方负责原子能力与技能清单压缩；本仓库不复制其正文或资源快照，不另建独立 Router 插件。
 - Next 保持跨步骤状态和执行上下文；调用官方指南只提供当前步骤的方法，不把整个流程丢给 suite。兼容 separate 技能与 CLI runtime reads，不假定 suite 已安装。
-- Router 与七个工作流平铺，内部参考按需加载。Router 说明官方能力与 Next 增量方法；各工作流按需引用 Router、复用有效上下文并回传结果，不循环分派。官方本身的多步方法也直接复用，不按步骤数机械区分官方/Next。
+- Router 与十个工作流平铺，内部参考按需加载。Router 说明官方能力与 Next 增量方法；各工作流按需引用 Router、复用有效上下文并回传结果，不循环分派。官方本身的多步方法也直接复用，不按步骤数机械区分官方/Next。
 - 仅在用户明确指挥 AI 时更新插件、CLI 或技能布局；不自动更新、下载、安装、移除全局技能。
 - 当前安装的 `lark-cli` 是运行时真相源。涉及命令、scope、身份、参数时先用 `lark-cli skills read ...` 或 `lark-cli <domain> --help` 核对。
 

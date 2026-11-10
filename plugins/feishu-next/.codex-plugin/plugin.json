@@ -1,6 +1,6 @@
 {
   "name": "feishu-next",
-  "version": "0.7.0",
+  "version": "0.11.0",
   "description": "Feishu/Lark workflow orchestration: connect operations with personal playbooks, evidence and validation, and navigate to official lark-suite.",
   "author": {
     "name": "BlueSkyXN",
@@ -21,7 +21,7 @@
   "interface": {
     "displayName": "Feishu Next",
     "shortDescription": "Connect Feishu operations into verifiable workflows.",
-    "longDescription": "Feishu Next is a workflow capability layer built from BlueSkyXN's Feishu/Lark playbooks and experience. Its bundled feishu-workflow-router explains official capabilities through on-demand domain maps, selects official basic usage or a distinct Next method, decomposes goals, coordinates dependencies, and navigates to official lark-suite or current official lark-cli guidance while preserving execution context and evidence. Router and seven playbooks stay independently discoverable; they reuse matching context and return verified outputs without recursive redispatch. Seven playbooks cover exports, document assets, chat archives, whiteboards and draw.io, text-preserving formatting, Mindnote outlines and generic Base snapshots. Next retains multi-step state instead of simply forwarding an entire task to suite. It does not copy official skills, maintain a separate Router plugin, or automatically update CLI or skill layouts. Private adapters and business data stay outside the package. The original 0.3.0 workflows were runtime-validated against lark-cli 1.0.83 and source-audited against lark-cli 1.0.86; these historical checks do not imply current installation or business acceptance.",
+    "longDescription": "Feishu Next is a workflow capability layer built from BlueSkyXN's Feishu/Lark playbooks and experience. Its bundled feishu-workflow-router explains official capabilities through on-demand domain maps, selects official basic usage or a distinct Next method, decomposes goals, coordinates dependencies, and navigates to official lark-suite or current official lark-cli guidance while preserving execution context and evidence. Router and ten playbooks stay independently discoverable; they reuse matching context and return verified outputs without recursive redispatch. Ten playbooks cover exports, browser-based slide-preview capture to PDF, document assets, chat archives, Semantic Card Diagrams design, whiteboard operations and draw.io, text-preserving formatting and paste repair, Mindnote outlines and generic Base snapshots. Next retains multi-step state instead of simply forwarding an entire task to suite. It does not copy official skills, maintain a separate Router plugin, or automatically update CLI or skill layouts. Private adapters and business data stay outside the package. The original 0.3.0 workflows were runtime-validated against lark-cli 1.0.83 and source-audited against lark-cli 1.0.86; these historical checks do not imply current installation or business acceptance.",
     "developerName": "BlueSkyXN",
     "category": "Productivity",
     "capabilities": [
@@ -35,7 +35,8 @@
       "Use $feishu-next:feishu-workflow-router to connect these Feishu operations and navigate to official suite as needed.",
       "Use $feishu-next:feishu-readonly-doc-export to export this document.",
       "Use $feishu-next:feishu-im-chat-archive to archive this chat.",
-      "Use $feishu-next:feishu-whiteboard-ops to update or sync this Feishu whiteboard."
+      "Use $feishu-next:feishu-whiteboard-ops to update or sync this Feishu whiteboard.",
+      "Use $feishu-next:feishu-whiteboard-semantic-cards to apply Semantic Card Diagrams to these materials."
     ],
     "brandColor": "#00B96B",
     "websiteURL": "https://github.com/BlueSkyXN/Feishu-Next/tree/main/plugins/feishu-next"

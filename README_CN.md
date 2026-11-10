@@ -12,7 +12,7 @@ plugin package -> marketplace install -> skill workflow
 官方 `lark-suite` 负责官方能力整合与技能清单压缩；Next 支持导航到 suite，但保留整个工作流的状态。
 它不是另一个 OpenAPI SDK，不复制官方正文或资源快照，始终以当前安装的 `lark-cli` 为运行时真相源。
 
-当前源码版本为 **0.7.0**，包含 **8 个 Skill**（Router 加 7 个具体工作流）；加上独立鉴权插件，全仓 **9 个 Skill**。
+当前源码版本为 **0.11.0**，包含 **11 个 Skill**（Router 加 10 个具体工作流）；加上独立鉴权插件，全仓 **12 个 Skill**。
 `feishu-workflow-router` 保留在 Next，不另建独立 Router 插件。从工作区提炼的公共能力保留文档格式对齐、思维笔记大纲和通用 Base 快照；5 个业务专用技能及项目快照实现仍在原项目维护，详见 [迁移说明](docs/skill-migration.md)。
 
 历史 `Feishu Next 0.3.0` 已使用本机安装的 `lark-cli 1.0.83` 验证，并对照
@@ -26,7 +26,7 @@ plugin package -> marketplace install -> skill workflow
 
 - Router 既介绍官方“能做什么”，也导航你的工作流；按需读取云文档与知识库、表格数据、消息协作、演示应用、认证扩展五类能力地图。
 - 判断依据是能力和附加方法，不是单步/多步：官方已有完整文档创作、权限治理等流程时直接复用，需要 Next 的保真、证据、恢复或跨任务状态时再用 Next。
-- 8 个技能继续平铺。每个玩法都提到 Router：缺执行上下文、能力不明或用户要求串联任务时按需使用；已处于流程中则沿用有效上下文，交回真实产物，不重复分派自己。身份、目标或授权改变仍需复核。
+- 11 个技能继续平铺。每个玩法都提到 Router：缺执行上下文、能力不明或用户要求串联任务时按需使用；已处于流程中则沿用有效上下文，交回真实产物，不重复分派自己。身份、目标或授权改变仍需复核。
 - 对多步任务，Next 保持步骤依赖、经过验证的产物、授权检查点和部分失败状态；不会把整个任务转给 suite 后就结束。
 - 当前客户端确实暴露 `lark-suite` 时，导航到其入口，再按需读取 `references/<skill-name>/GUIDE.md`。不把内部指南当独立技能调用。
 - 仍兼容独立 `lark-*` 技能，以及 `lark-cli skills read ...`。CLI 的技能清单不是客户端安装清单，不据此声称 suite 已安装。
@@ -41,8 +41,10 @@ plugin package -> marketplace install -> skill workflow
 - 将多项飞书操作组成有步骤依赖、证据和完成检查的工作流。
 - 导航到官方 suite、独立技能或运行时说明；直接复用匹配的官方工作流，不重复包装原子 API。
 - 只读导出飞书文档、表格、多维表格和幻灯片。
+- 按用户明确要求，通过 Chrome 逐页截取可查看的飞书幻灯片并合成图片型 PDF，核对画布、页序、图片编码和像素尺寸。
 - 盘点飞书文档中的图片、附件、画板和嵌入资源。
 - 归档飞书 IM 聊天记录、消息搜索结果、线程和资源。
+- 把研究或业务材料设计成统一的卡片、流程、泳道、矩阵或前后对照图，生成可编辑 SVG 并检查视觉效果；提供零第三方 Python 依赖的组件和合成示例。
 - 安全修改、重绘、恢复飞书文档内画板，并处理 `.drawio` / diagrams.net 到白板的发布同步边界。
 
 ## 仓库结构
@@ -55,10 +57,13 @@ plugins/feishu-next/                   # 默认工作流插件
   skills/
     feishu-workflow-router/
     feishu-readonly-doc-export/
+    feishu-slides-preview-to-pdf/
     feishu-doc-asset-map/
     feishu-im-chat-archive/
     feishu-whiteboard-ops/
+    feishu-whiteboard-semantic-cards/
     feishu-doc-format-align/
+    feishu-doc-format-repair/
     feishu-mindnote-outline/
     feishu-base-snapshot-maintain/
 plugins/feishu-traework-local-auth/    # 可选：复用本机 TraeWork 飞书授权
@@ -102,20 +107,26 @@ Windows 上 `lark-cli` 一般是 `lark-cli.exe`；macOS / Linux 只有无后缀�
 
 ```text
 $feishu-next:feishu-readonly-doc-export
+$feishu-next:feishu-slides-preview-to-pdf
 $feishu-next:feishu-doc-asset-map
 $feishu-next:feishu-im-chat-archive
 $feishu-next:feishu-whiteboard-ops
+$feishu-next:feishu-whiteboard-semantic-cards
 ```
 
 ## 运行时依赖
 
-需要已安装并配置飞书官方 CLI：
+使用官方 API 的工作流需要已安装并配置飞书官方 CLI：
 
 ```bash
 command -v lark-cli
 lark-cli --version
 lark-cli skills list
 ```
+
+显式调用 `feishu-slides-preview-to-pdf` 的纯浏览器路径使用 Chrome 已有的飞书登录态；不要求先安装或登录 CLI。若转用 CLI 查询或官方导出，再建立对应的执行上下文。截图结果保留水印，不含原始文字层、动画或可编辑对象。
+
+`feishu-whiteboard-semantic-cards` 使用“语义卡片图解”风格，根据本地材料完成设计与预览，无需飞书认证；读取线上参考或写回时，再复用 Router 上下文并交给 `feishu-whiteboard-ops` 执行。它负责版式、视觉层级和设计源，后者负责目标定位、备份、写入与恢复。
 
 飞书访问、身份、scope、权限错误和高风险确认规则都以当前 `lark-cli` 内嵌 skill 为准：
 
@@ -144,10 +155,13 @@ lark-cli auth status --json --verify
 | --- | --- |
 | `feishu-workflow-router` | 选择与编排多步任务，保持执行上下文，并导航到官方 suite |
 | `feishu-readonly-doc-export` | 只读导出 doc/docx/sheet/bitable/slides |
+| `feishu-slides-preview-to-pdf` | 通过浏览器逐页截取飞书幻灯片，校验并合成图片型 PDF |
 | `feishu-doc-asset-map` | 盘点文档图片、附件、画板、内嵌表格和 Base |
 | `feishu-im-chat-archive` | 分页归档 IM 消息、线程、资源和 evidence 字段 |
 | `feishu-whiteboard-ops` | 安全查看、修改、重绘、恢复画板，含 `.drawio` 同步边界 |
-| `feishu-doc-format-align` | 对齐文档排版，逐段/逐格核对正文未变 |
+| `feishu-whiteboard-semantic-cards` | 用“语义卡片图解”风格设计总览、流程、泳道与矩阵，生成 SVG、预览检查后交接画板写回 |
+| `feishu-doc-format-align` | 按参考文档或明确样式规则统一排版，默认保留材料划分与正文，逐段逐格验证 |
+| `feishu-doc-format-repair` | 诊断并修复标题错位、材料边界混乱和粘贴残留，逐项核对获准的结构与文本变化 |
 | `feishu-mindnote-outline` | 维护已有思维笔记的大纲和父子关系 |
 | `feishu-base-snapshot-maintain` | 周月快照、跨周比较与部分失败续做 |
 
@@ -207,7 +221,7 @@ python3 ~/.codex/skills/.system/skill-creator/scripts/quick_validate.py \
 
 ## 命名与版本
 
-详见 [命名与版本规则](docs/skill-governance.md)、[技能清单与旧名映射](skill-catalog.json) 和 [变更记录](CHANGELOG.md)。插件版本存 manifest，单技能版本存 `metadata.version`，均采用完整 SemVer；技能名称保持稳定的 `feishu-*` kebab-case，不带 `-v2` 等版本后缀。Router 为 `0.7.0`；协作规则澄清后，文档格式与思维笔记为 `0.1.1`、通用快照为 `0.1.2`、资产盘点为 `0.3.2`，导出、聊天归档与白板为 `0.3.1`。
+详见 [命名与版本规则](docs/skill-governance.md)、[技能清单与旧名映射](skill-catalog.json) 和 [变更记录](CHANGELOG.md)。插件版本存 manifest，单技能版本存 `metadata.version`，均采用完整 SemVer；技能名称保持稳定的 `feishu-*` kebab-case，不带 `-v2` 等版本后缀。Router 为 `0.11.0`，语义卡片图解为 `0.2.0`，幻灯片预览转 PDF 和格式修复为 `0.1.0`；格式对齐为 `0.1.2`、思维笔记为 `0.1.1`、通用快照为 `0.1.2`、资产盘点为 `0.3.2`、白板运维为 `0.3.3`，导出与聊天归档为 `0.3.1`。
 
 5 个业务专用技能和项目快照实现已恢复原项目正常目录，前两项公共能力保留本地兼容入口。公开收录以可复用飞书操作能力为标准，不因业务流程读写飞书就纳入；通用快照不依赖原项目脚本，也不提供一键同步器。源码提交与 PR 不代表已更新安装缓存或发布版本；本次未执行远端业务操作。
 

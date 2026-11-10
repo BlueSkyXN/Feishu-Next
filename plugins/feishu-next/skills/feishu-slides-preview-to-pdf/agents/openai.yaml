@@ -1,0 +1,4 @@
+interface:
+  display_name: "飞书幻灯片预览转 PDF"
+  short_description: "通过 Chrome 逐页截取飞书幻灯片，校验画布与页序后合成 PDF"
+  default_prompt: "请使用 $feishu-next:feishu-slides-preview-to-pdf，通过 Chrome 将这份飞书幻灯片逐页截图并合成 PDF，核对页码、图片尺寸和裁切。"

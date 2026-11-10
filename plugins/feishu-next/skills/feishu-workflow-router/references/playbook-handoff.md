@@ -1,6 +1,6 @@
 # Playbook and Router cooperation
 
-All seven Next playbooks remain independent public skills. Mentioning
+All ten Next playbooks remain independent public skills. Mentioning
 `$feishu-next:feishu-workflow-router` makes their shared navigation and execution
 rules discoverable; it does not require an extra Router invocation for every
 operation, page or retry. A reference read is sufficient when only a shared rule
@@ -9,11 +9,16 @@ is needed; use a host Skill tool only for an actually exposed entry.
 ## Direct invocation
 
 If the request matches the selected playbook, keep it as the active method.
-Before any business call, establish the `lark_execution` contract using
+Before any CLI business call, establish the `lark_execution` contract using
 [lark-execution-context.md](lark-execution-context.md) when no matching verified
 context is available. Discover internal profile/App fields rather than asking an
 ordinary user to name them. Capability selection or a purely local draft does
 not itself require authentication or a business call.
+
+The explicitly requested slide-preview capture workflow verifies its browser
+profile/login, document and capture scope without requiring a CLI contract.
+If a later step invokes the CLI, establish the contract before that call.
+Browser login and CLI identity cannot substitute for one another.
 
 When official capabilities or task ownership are unclear, consult the Router's
 [capability overview](../SKILL.md#official-capability-overview) and read only the

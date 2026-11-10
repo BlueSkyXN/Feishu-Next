@@ -2,8 +2,8 @@
 name: feishu-workflow-router
 description: Use when asking what Feishu/Lark can do or choosing how to read, create, edit, search, export or manage docs, files, Wiki, tables, messages, meetings or apps; select official lark-suite guidance, a Next playbook, or a composed workflow. Also use for execution-context checks and before browser/UI fallback; directly matched Next skills can run without redispatch.
 metadata:
-  version: "0.7.0"
-  updated: "2026-10-06"
+  version: "0.11.0"
+  updated: "2026-11-10"
 ---
 
 # Feishu workflow router
@@ -26,7 +26,7 @@ boundary lies. Read only the matching capability map below; do not demand a URL,
 profile, login or business access just to explain capabilities. The maps describe
 routing, not executable API contracts or proof of access.
 
-Next keeps this Router plus seven independently discoverable playbooks. A directly
+Next keeps this Router plus ten independently discoverable playbooks. A directly
 matched playbook need not restart here; references are internal detail, not more
 public skills.
 
@@ -126,6 +126,16 @@ unless the user explicitly accepts the risk.
 
 ## Bootstrap discovery
 
+For a local Semantic Card Diagrams design request, select
+`$feishu-next:feishu-whiteboard-semantic-cards` without requiring CLI authentication.
+Read-only online references or a later board write use the normal CLI context
+and whiteboard operations handoff.
+
+For an explicit browser-capture request for a viewable slide deck, select
+`$feishu-next:feishu-slides-preview-to-pdf` before CLI bootstrap. That workflow
+checks the selected browser identity, document and capture scope. It does not
+require CLI installation or login unless it also invokes a CLI operation.
+
 Bootstrap is read-only and does not require a complete business contract. Use
 it to turn an ordinary natural-language request into a proposed
 `lark_execution_draft`; do not ask the user for raw profile names or App IDs.
@@ -136,8 +146,9 @@ lark-cli --version
 lark-cli skills list
 ```
 
-If `lark-cli` is missing, stop and explain that Feishu Next requires the
-official CLI. Do not infer installed capabilities from this repository.
+If `lark-cli` is missing, stop CLI-dependent steps and explain the dependency.
+Do not infer installed capabilities from this repository. The dedicated browser
+capture path remains governed by its own browser prerequisites.
 
 Read `lark-shared` whenever credentials, identity, scopes, permission errors,
 `verification_url`, `console_url`, `_notice.update`, QR flow, unsafe paths,
@@ -166,6 +177,10 @@ Likewise, `lark-cli doctor --offline` names the available local diagnostic; use
 the profile-qualified form above for a selected execution context.
 
 ## Execution context contract
+
+This contract governs CLI business, authentication, profile and identity-policy
+calls. The dedicated browser-capture workflow verifies browser identity and scope
+instead; browser login never establishes a CLI contract.
 
 Read
 [`references/lark-execution-context.md`](references/lark-execution-context.md)
@@ -264,8 +279,15 @@ identity, stop instead of silently switching identities.
 
 ## Capability gaps and UI fallback
 
+The dedicated `$feishu-next:feishu-slides-preview-to-pdf` workflow is an explicit
+browser-capture method. When the user requests it, follow its browser context,
+page-fidelity and local PDF checks without first proving a CLI gap. An ordinary
+export failure alone is not permission to switch to screenshot capture; explain
+the image-based result and obtain acceptance unless already authorized. This
+exception covers read-only slide capture, not browser editing or permissions.
+
 When a required step looks unsupported by the current CLI, do not switch tools
-silently. Escalate in this order:
+silently. For other CLI-to-UI fallbacks, escalate in this order:
 
 1. Prove the gap with runtime evidence first. Read the owning skill and its
    relevant references, then quote the exact line that marks the operation
@@ -281,9 +303,10 @@ silently. Escalate in this order:
    gap, the exact UI action, and its blast radius, then wait for confirmation.
 4. Keep the fallback bounded to the single proven gap. Reads, revision checks,
    backups, and post-write verification stay on `lark-cli`.
-5. Do not encode a browser fallback into reusable skills, templates, or docs
-   as a normal step. Record it as a temporary workaround tied to the proven
-   gap and the `lark-cli` version, so it is re-checked when the CLI updates.
+5. Outside the dedicated slide-capture workflow above, do not encode a browser
+   fallback into reusable skills, templates, or docs as a normal step. Record
+   it as a temporary workaround tied to the proven gap and the `lark-cli`
+   version, so it is re-checked when the CLI updates.
 
 An unavailable command is a capability gap, not a scope or permission failure;
 report it as such.
@@ -295,13 +318,28 @@ Use Feishu Next for the reusable, stateful workflows it explicitly owns:
 | Workflow signal | Use |
 | --- | --- |
 | Export a doc/sheet/base/slides file with artifact evidence | `$feishu-next:feishu-readonly-doc-export` |
+| Explicitly capture a viewable Slides deck through the browser into an image-based PDF | `$feishu-next:feishu-slides-preview-to-pdf` |
 | Inventory document assets or embedded resources | `$feishu-next:feishu-doc-asset-map` |
 | Archive IM history with pagination/evidence | `$feishu-next:feishu-im-chat-archive` |
+| Design whiteboards in the Semantic Card Diagrams style with semantic colors and modular cards | `$feishu-next:feishu-whiteboard-semantic-cards` |
 | Modify, redraw, recover, or validate a whiteboard | `$feishu-next:feishu-whiteboard-ops` |
 | Publish/sync `.drawio` or diagrams.net to a Feishu whiteboard | `$feishu-next:feishu-whiteboard-ops` |
-| Align document formatting while preserving text | `$feishu-next:feishu-doc-format-align` |
+| Apply a reference or explicit style rules while preserving text | `$feishu-next:feishu-doc-format-align` |
+| Diagnose and repair heading/material-boundary damage or confirmed paste residue | `$feishu-next:feishu-doc-format-repair` |
 | Update an existing Mindnote outline and parent relationships | `$feishu-next:feishu-mindnote-outline` |
 | Maintain weekly/monthly Base snapshots and comparison batches | `$feishu-next:feishu-base-snapshot-maintain` |
+
+For a whiteboard redraw that needs visual decisions, design first, then pass
+the inspected source and preview to whiteboard-ops for the authorized remote
+change. Simple text/color edits and recovery can stay in ops. Neither playbook
+redispatches itself through Router.
+
+For a vague request such as “格式乱了”, inspect the symptoms before choosing
+between alignment and repair. Known style rules select align; damaged heading
+relationships, material boundaries or pasted content select repair, including
+single-source content. When both are requested, verify repair first, then pass
+the latest snapshot, revision and block mapping to align with the valid context.
+Each workflow carries its own complete editing and verification rules.
 
 Only publish workflows with Feishu-specific, reusable execution value beyond
 an organization's policy or template. Business reports, job assessments,
