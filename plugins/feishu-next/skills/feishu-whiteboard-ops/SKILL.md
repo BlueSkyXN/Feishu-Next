@@ -2,8 +2,8 @@
 name: feishu-whiteboard-ops
 description: Use when viewing, editing, recovering, or syncing a Feishu/Lark document whiteboard, including publishing a local .drawio source while keeping rollback discipline.
 metadata:
-  version: "0.3"
-  updated: "2026-08-12"
+  version: "0.3.3"
+  updated: "2026-11-10"
 ---
 
 # Feishu whiteboard ops
@@ -14,14 +14,23 @@ permissions, or publishing.
 
 The runtime truth is the installed `lark-cli` and its embedded skills.
 
-This skill may be invoked directly. Before any business call, use
-`$feishu-next:feishu-workflow-router` to build and verify the complete
-`lark_execution` contract. Let the Router discover internal profile/App fields
-from runtime and caller metadata before asking the user; do not ask an ordinary
-user for a raw profile name or App ID. In every command below, replace
-`<profile>` and `<identity>` with that verified contract and preserve both
-through document fetch, baseline export, dry-run, write, and post-write
-verification.
+## Router cooperation
+
+This playbook can run directly. Consult `$feishu-next:feishu-workflow-router`
+for missing verified context, unclear official capability selection, or a
+user-requested cross-skill extension. Before business calls, establish or reuse
+a matching verified `lark_execution` contract without redispatching this active
+playbook. Revalidate changed targets, profile/identity, scope or write authority;
+reuse is not blanket approval. Preserve `--profile '<profile>'` and
+`--as '<identity>'`; do not ask an ordinary
+user for a raw profile name or App ID.
+
+For context checks or workflow handoffs, follow
+[the shared rules](../feishu-workflow-router/references/playbook-handoff.md).
+Load only required official guidance through the observed suite/separate/runtime
+path; reuse already-current reads while retaining command and validation checks.
+
+Return the target board, rollback baseline, write outcome and verification evidence to the caller; an uncertain write blocks dependent document changes until readback resolves it.
 
 ## Official skill relationship
 
@@ -83,8 +92,12 @@ skill is available, read it before editing/exporting `.drawio` files.
 
 ## Mode routing
 
-Keep one Feishu Next whiteboard skill. Do not create or route to a separate
-Feishu-specific draw.io skill inside this plugin. Use this split:
+Keep one Feishu Next whiteboard operations skill, `feishu-whiteboard-ops`.
+For the Semantic Card Diagrams style and its content/layout design, use
+`$feishu-next:feishu-whiteboard-semantic-cards`, then resume here with its inspected
+source and preview. This workflow retains target resolution, rollback baselines,
+write strategy and remote validation. Do not create or route to a separate
+Feishu-specific draw.io operations skill inside this plugin. Use this split:
 
 | Signal | Action |
 | --- | --- |
@@ -119,8 +132,7 @@ lark-cli --profile '<profile>' docs +fetch \
   --as '<identity>' \
   --doc '<doc-url-or-token>' \
   --detail with-ids \
-  --doc-format xml \
-  --format json
+  --doc-format xml
 ```
 
 When the user distinguishes "old version", "draft", "first", "second", or

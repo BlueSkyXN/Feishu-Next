@@ -1,0 +1,53 @@
+{
+  "schema_version": 1,
+  "plugins": {
+    "feishu-next": {
+      "skills": {
+        "feishu-workflow-router": {
+          "legacy_names": []
+        },
+        "feishu-readonly-doc-export": {
+          "legacy_names": []
+        },
+        "feishu-doc-asset-map": {
+          "legacy_names": []
+        },
+        "feishu-im-chat-archive": {
+          "legacy_names": []
+        },
+        "feishu-whiteboard-ops": {
+          "legacy_names": []
+        },
+        "feishu-doc-format-align": {
+          "legacy_names": []
+        },
+        "feishu-doc-format-repair": {
+          "legacy_names": []
+        },
+        "feishu-mindnote-outline": {
+          "legacy_names": []
+        },
+        "feishu-base-snapshot-maintain": {
+          "legacy_names": []
+        },
+        "feishu-slides-preview-to-pdf": {
+          "legacy_names": [
+            "ppt-preview-to-pdf"
+          ]
+        },
+        "feishu-whiteboard-semantic-cards": {
+          "legacy_names": [
+            "feishu-whiteboard-design"
+          ]
+        }
+      }
+    },
+    "feishu-traework-local-auth": {
+      "skills": {
+        "feishu-traework-local-auth": {
+          "legacy_names": []
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,8 @@
+interface:
+  display_name: "飞书思维笔记大纲"
+  short_description: "Maintain an existing mindnote outline and hierarchy."
+  brand_color: "#00B96B"
+  default_prompt: "Use $feishu-next:feishu-mindnote-outline for this task; start read-only and report the proposed scope."
+
+policy:
+  allow_implicit_invocation: true

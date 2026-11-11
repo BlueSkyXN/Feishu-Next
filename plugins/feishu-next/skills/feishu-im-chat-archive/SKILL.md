@@ -2,8 +2,8 @@
 name: feishu-im-chat-archive
 description: Use when exporting or archiving Feishu/Lark IM chat history, threads, reactions, or time-bounded messages with pagination and evidence preservation.
 metadata:
-  version: "0.3"
-  updated: "2026-08-12"
+  version: "0.3.1"
+  updated: "2026-10-06"
 ---
 
 # Feishu IM chat archive
@@ -12,14 +12,23 @@ Use this workflow for read-only IM archives. Sending messages, adding reactions,
 pinning, changing group membership, or changing feed shortcuts are separate
 write tasks and require explicit confirmation.
 
-This skill may be invoked directly. Before any business call, use
-`$feishu-next:feishu-workflow-router` to build and verify the complete
-`lark_execution` contract. Let the Router discover internal profile/App fields
-from runtime and caller metadata before asking the user; do not ask an ordinary
-user for a raw profile name or App ID. In every command below, replace
-`<profile>` and `<identity>` with that verified contract and preserve them
-across pagination, resource downloads, and thread expansion. Where a command
-is user-only, the verified identity must be `user`; do not silently switch it.
+## Router cooperation
+
+This playbook can run directly. Consult `$feishu-next:feishu-workflow-router`
+for missing verified context, unclear official capability selection, or a
+user-requested cross-skill extension. Before business calls, establish or reuse
+a matching verified `lark_execution` contract without redispatching this active
+playbook. Revalidate changed targets, profile/identity, scope or write authority;
+reuse is not blanket approval. Preserve `--profile '<profile>'` and
+`--as '<identity>'`; do not ask an ordinary
+user for a raw profile name or App ID.
+
+For context checks or workflow handoffs, follow
+[the shared rules](../feishu-workflow-router/references/playbook-handoff.md).
+Load only required official guidance through the observed suite/separate/runtime
+path; reuse already-current reads while retaining command and validation checks.
+
+Return archive paths, covered time range, pagination/thread completeness and resource failures to the caller. Preserve the same identity across pages; a user-only command must not silently switch a bot contract.
 
 ## Required runtime reads
 

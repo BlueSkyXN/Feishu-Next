@@ -1,21 +1,107 @@
 ---
 name: feishu-workflow-router
-description: Use when routing Feishu/Lark lark-cli work by URL, token, domain, auth, profile, or scope; before concluding lark-cli cannot do it; and before any browser/UI fallback. Prefer this over a standalone lark-cli guide.
+description: Use when asking what Feishu/Lark can do or choosing how to read, create, edit, search, export or manage docs, files, Wiki, tables, messages, meetings or apps; select official lark-suite guidance, a Next playbook, or a composed workflow. Also use for execution-context checks and before browser/UI fallback; directly matched Next skills can run without redispatch.
 metadata:
-  version: "0.3"
-  updated: "2026-08-12"
+  version: "0.11.0"
+  updated: "2026-11-10"
 ---
 
 # Feishu workflow router
 
-Use this as the Feishu Next entrypoint. The runtime truth is the installed
-`lark-cli`, not this repository or older local source trees.
+Use this as the Feishu Next workflow entrypoint: connect the user's Feishu
+operations into an ordered, verifiable outcome, rather than merely choosing one
+API or forwarding the whole task to another skill. Next preserves personal
+playbooks, step dependencies, evidence and recovery discipline. Official
+`lark-suite` owns its aggregated capability entry and compressed skill list.
+The installed `lark-cli` remains the runtime truth.
 
-This skill supersedes the standalone global `lark-cli-guide` for installed
-Feishu Next usage. Keep Feishu-specific guidance in this plugin so Codex can
-discover it through the marketplace, while continuing to read official
-embedded `lark-*` skills at runtime. Do not copy or vendor official `lark-*`
-skill bodies into this plugin.
+This skill supersedes the standalone global `lark-cli-guide` for Next workflow
+usage, not the official suite. Do not copy or vendor official `lark-*` skill
+bodies into this plugin. Next has no separate Router plugin or official snapshot.
+
+## Choose official usage, a Next playbook, or composition
+
+For capability questions, explain what the requested domain can do and where its
+boundary lies. Read only the matching capability map below; do not demand a URL,
+profile, login or business access just to explain capabilities. The maps describe
+routing, not executable API contracts or proof of access.
+
+Next keeps this Router plus ten independently discoverable playbooks. A directly
+matched playbook need not restart here; references are internal detail, not more
+public skills.
+
+- If official guidance fully covers the requested result, use it, including its
+  own multi-step procedures. **Step count does not decide ownership.** Document
+  creation, permission governance and folder organization can already be official
+  workflows. Do not replace them merely because they contain several commands.
+- For a matching Next method or an explicit Next invocation, preserve that
+  playbook's added evidence, fidelity, backup or recovery requirements.
+- Compose when the user's goal connects results across methods/capabilities or
+  needs an enclosing state/acceptance contract. Read
+  [workflow-orchestration.md](references/workflow-orchestration.md) only then.
+  Do not invent a persistent skill for each request or add unrequested steps.
+- Next retains ownership of multi-step state: step order, inputs/outputs,
+  authorization boundaries, validation and partial-failure checkpoints.
+  Navigating to suite supplies a step's official procedure, not permission to
+  abandon the overall plan or its stronger evidence/backup rules.
+- A directly invoked Next sub-skill may use this Router only for context or
+  capability discovery. Return that result to the caller without redispatching
+  the same sub-skill. Reuse a valid frozen context; do not loop between entries.
+  Apply [playbook-handoff.md](references/playbook-handoff.md) when a directly
+  invoked playbook needs shared context or an extension to another step.
+
+## Official capability overview
+
+Choose by the user's goal, not a skill name or URL alone. Read only the relevant
+map when explaining capabilities, resolving overlap or choosing between official
+usage and Next. Known unambiguous tasks may go straight to the selected official
+guide. Do not read every map or copy its descriptions into every playbook.
+
+| User goal | Official guide candidates | Read when needed |
+| --- | --- | --- |
+| Read/create/edit a document, manage media or history; find/copy/export files; organize Wiki; edit native Markdown | `lark-doc`, `lark-drive`, `lark-wiki`, `lark-markdown` | [Documents and knowledge](references/capabilities-documents.md) |
+| Read/write cells, formulas and charts; manage Base records/schema, forms, dashboards and BaseApp | `lark-sheets`, `lark-base`; file transfer may use `lark-drive` | [Tables and data](references/capabilities-data.md) |
+| Messages/mail, calendar/rooms, meeting content, tasks/approvals, contacts, attendance and OKR | `lark-im`, `lark-mail`, `lark-calendar`, `lark-meeting`, `lark-task`, `lark-approval`, `lark-contact`, `lark-attendance`, `lark-okr` | [Communication and collaboration](references/capabilities-collaboration.md) |
+| Native Slides, document whiteboards, Miaoda/Spark development and creative apps | `lark-slides`, `lark-whiteboard`, `lark-apps` | [Visuals and apps](references/capabilities-visual-apps.md) |
+| Auth/identity, events, Open Platform management, missing API coverage and custom skills | `lark-shared`, `lark-event`, domain help, `lark-openapi-explorer`, `lark-skill-maker` | [Platform and extensions](references/capabilities-platform.md) |
+
+Each map explains capabilities, natural-language triggers, domain boundaries and
+when a Next method adds value. It is a small navigation summary, not an official
+skill copy. Read current official guides/references before using actual commands.
+
+## Official workflows and aliases
+
+Prefer an exact official workflow when it satisfies the whole request:
+`lark-workflow-meeting-summary` for meeting summaries over a time range and
+`lark-workflow-standup-report` for calendar plus incomplete-task summaries.
+Document creation and Drive permission governance/organization also have official
+procedures inside their domain guides; follow them rather than rebuilding them.
+A method used as a step returns evidence to the enclosing Next workflow.
+
+The compatibility names `lark-minutes`, `lark-note`, `lark-vc` and
+`lark-vc-agent` lead to `lark-meeting` in the current runtime. They are not four
+independent capabilities; verify older or restricted distributions at runtime.
+
+## Official suite navigation
+
+Read [official-suite-navigation.md](references/official-suite-navigation.md)
+when choosing between suite, separate skills and runtime reads:
+
+- If `lark-suite` is actually exposed by the current host, load it through the
+  host's available skill mechanism (or its observed entry file). Follow its
+  selected `references/<skill-name>/GUIDE.md`; do not invoke nested guides as
+  independent Skill tools, scan all guides, or assume an install cache path.
+- If only separate `lark-*` skills are exposed, use the selected official skill.
+  If neither layout is visible, use `lark-cli skills read <skill>` for embedded
+  guidance. Missing machine resources must still be reported, not ignored.
+- `lark-cli skills list` enumerates binary-embedded domain guides, not host
+  registrations. It does not prove `lark-suite` is installed. Do not invent
+  `lark-cli skills read lark-suite` when the runtime does not list it.
+- Commands, identity, scopes and risk behavior still require current runtime
+  guidance/help. An installed suite does not prove an unavailable domain exists.
+- Updates and layout changes happen only when the user explicitly directs AI to
+  perform them. Never automatically run `lark-cli update`, switch layouts,
+  install plugins, remove global skills or refresh a snapshot during a task.
 
 ## Authority model
 
@@ -27,7 +113,8 @@ responsibilities separate:
 | Latest user instruction | target resource, business intent, risk acceptance |
 | Official `lark-cli skills read <lark-*>` output | skill-owned commands, flags, identity behavior, scopes, risk labels, API support, error handling |
 | Current `lark-cli <domain> --help` / shortcut help | domains or commands that do not have an embedded skill, plus current command availability |
-| `feishu-workflow-router` | resource classification, runtime discovery, official skill selection, workflow handoff |
+| Official `lark-suite` or separate skills | official capability selection and selective guide loading; not Next workflow state |
+| `feishu-workflow-router` | goal decomposition, step dependencies, shared execution context, official navigation and workflow checkpoints |
 | Feishu Next sub-skills | cross-step order, evidence capture, backups, validation gates, local artifact boundaries |
 | Feishu Next references | optional branch details loaded only when their trigger is present |
 
@@ -39,6 +126,16 @@ unless the user explicitly accepts the risk.
 
 ## Bootstrap discovery
 
+For a local Semantic Card Diagrams design request, select
+`$feishu-next:feishu-whiteboard-semantic-cards` without requiring CLI authentication.
+Read-only online references or a later board write use the normal CLI context
+and whiteboard operations handoff.
+
+For an explicit browser-capture request for a viewable slide deck, select
+`$feishu-next:feishu-slides-preview-to-pdf` before CLI bootstrap. That workflow
+checks the selected browser identity, document and capture scope. It does not
+require CLI installation or login unless it also invokes a CLI operation.
+
 Bootstrap is read-only and does not require a complete business contract. Use
 it to turn an ordinary natural-language request into a proposed
 `lark_execution_draft`; do not ask the user for raw profile names or App IDs.
@@ -49,8 +146,9 @@ lark-cli --version
 lark-cli skills list
 ```
 
-If `lark-cli` is missing, stop and explain that Feishu Next requires the
-official CLI. Do not infer installed capabilities from this repository.
+If `lark-cli` is missing, stop CLI-dependent steps and explain the dependency.
+Do not infer installed capabilities from this repository. The dedicated browser
+capture path remains governed by its own browser prerequisites.
 
 Read `lark-shared` whenever credentials, identity, scopes, permission errors,
 `verification_url`, `console_url`, `_notice.update`, QR flow, unsafe paths,
@@ -79,6 +177,10 @@ Likewise, `lark-cli doctor --offline` names the available local diagnostic; use
 the profile-qualified form above for a selected execution context.
 
 ## Execution context contract
+
+This contract governs CLI business, authentication, profile and identity-policy
+calls. The dedicated browser-capture workflow verifies browser identity and scope
+instead; browser login never establishes a CLI contract.
 
 Read
 [`references/lark-execution-context.md`](references/lark-execution-context.md)
@@ -131,8 +233,12 @@ identity, stop instead of silently switching identities.
    attachment, incoming event, URL path, token prefix, or user intent. For
    phrases such as "this document", inspect available message context before
    asking the user for a URL.
-2. Run `lark-cli skills list` and look for an exact matching official skill.
-3. When a matching skill exists, read it and every reference it requires:
+2. Classify the request as a Next playbook, a composed workflow, or a direct
+   official operation. Navigate through an actually available `lark-suite` or
+   separate skill; run `lark-cli skills list` to verify the embedded surface.
+   Reuse discovery within the same binary/profile/distribution context.
+3. Read the chosen official guide and the references needed by this step.
+   For runtime-only discovery or command/identity verification, use:
 
    ```bash
    lark-cli skills read <skill>
@@ -160,8 +266,9 @@ identity, stop instead of silently switching identities.
    available; otherwise suggest `lark-cli update`. Do not misclassify an
    unavailable or deliberately concealed command as a scope or permission
    failure.
-6. Prefer an exact official runtime workflow when one exists. Use Feishu Next
-   only for the stateful workflows explicitly owned by this plugin.
+6. Prefer an exact official workflow when it satisfies the whole request. When
+   it is one step of a larger Next workflow, retain the enclosing dependencies,
+   authorization, evidence and validation requirements.
 7. Use `lark-openapi-explorer`, `lark-cli schema`, or `lark-cli api` only when
    neither an official skill nor a registered domain/shortcut covers the task.
    `lark-cli api` has only a generic `Risk: write` classification and cannot
@@ -172,8 +279,15 @@ identity, stop instead of silently switching identities.
 
 ## Capability gaps and UI fallback
 
+The dedicated `$feishu-next:feishu-slides-preview-to-pdf` workflow is an explicit
+browser-capture method. When the user requests it, follow its browser context,
+page-fidelity and local PDF checks without first proving a CLI gap. An ordinary
+export failure alone is not permission to switch to screenshot capture; explain
+the image-based result and obtain acceptance unless already authorized. This
+exception covers read-only slide capture, not browser editing or permissions.
+
 When a required step looks unsupported by the current CLI, do not switch tools
-silently. Escalate in this order:
+silently. For other CLI-to-UI fallbacks, escalate in this order:
 
 1. Prove the gap with runtime evidence first. Read the owning skill and its
    relevant references, then quote the exact line that marks the operation
@@ -189,55 +303,13 @@ silently. Escalate in this order:
    gap, the exact UI action, and its blast radius, then wait for confirmation.
 4. Keep the fallback bounded to the single proven gap. Reads, revision checks,
    backups, and post-write verification stay on `lark-cli`.
-5. Do not encode a browser fallback into reusable skills, templates, or docs
-   as a normal step. Record it as a temporary workaround tied to the proven
-   gap and the `lark-cli` version, so it is re-checked when the CLI updates.
+5. Outside the dedicated slide-capture workflow above, do not encode a browser
+   fallback into reusable skills, templates, or docs as a normal step. Record
+   it as a temporary workaround tied to the proven gap and the `lark-cli`
+   version, so it is re-checked when the CLI updates.
 
 An unavailable command is a capability gap, not a scope or permission failure;
 report it as such.
-
-## Atomic routing
-
-| User intent | Read first | Typical command family |
-| --- | --- | --- |
-| Document read/edit/media, Docx cover | `lark-doc` | `lark-cli docs ...` |
-| Mindnote content or nodes | `lark-doc` | `lark-cli mindnotes ...` |
-| Drive search/import/export/comments/permissions/secure labels/versions | `lark-drive` | `lark-cli drive ...` |
-| Locate Docx text from review comments | `lark-drive`, then `references/lark-drive-comment-location.md` | `lark-cli drive +list-comments --need-relation ...` |
-| Native Drive Markdown create/fetch/patch/diff | `lark-markdown` | `lark-cli markdown ...` |
-| Wiki spaces, members, nodes, move/copy/move-to-drive | `lark-wiki` | `lark-cli wiki ...` |
-| Sheets cells, formulas, charts, pivots, formatting | `lark-sheets` | `lark-cli sheets ...` |
-| Base records, fields, views, dashboards, workflows, forms, roles/permissions | `lark-base` | `lark-cli base ...` |
-| IM messages, chats, resources, cards, reactions | `lark-im` | `lark-cli im ...` |
-| Calendar events and meeting rooms | `lark-calendar` | `lark-cli calendar ...` |
-| Mail read, draft, send, reply | `lark-mail` | `lark-cli mail ...` |
-| Tasks, task lists, subtasks, task agents | `lark-task` | `lark-cli task ...` |
-| Approval definitions, instances, and approval tasks | `lark-approval` | `lark-cli approval ...` |
-| Personal attendance records | `lark-attendance` | `lark-cli attendance ...` |
-| OKR objectives, KRs, alignments, and progress | `lark-okr` | `lark-cli okr ...` |
-| Minutes upload/search/content/permission | `lark-minutes` | `lark-cli minutes ...` |
-| Known meeting note ID or transcript | `lark-note` | `lark-cli note ...` |
-| Ended meetings and meeting artifacts | `lark-vc` | `lark-cli vc ...` |
-| Live meeting join/leave/events/messages/reactions | `lark-vc-agent` | `lark-cli vc ...` |
-| Slides create/read/edit/lint/XML workflows | `lark-slides` | `lark-cli slides ...` |
-| Whiteboards | `lark-whiteboard` | `lark-cli whiteboard ...` |
-| Contact lookup | `lark-contact` | `lark-cli contact ...` |
-| Miaoda/Spark development, deploy, DB, files, keys, observability, env, roles, automation | `lark-apps` | `lark-cli apps ...` |
-| Open Platform app slash commands | domain help; no `lark-application` skill | `lark-cli application ...` |
-| Events and subscriptions | `lark-event` | `lark-cli event ...` |
-| Create a reusable custom lark-cli skill | `lark-skill-maker` | follow the runtime skill |
-| Unsupported raw API | `lark-openapi-explorer` | `lark-cli schema ...`, then `lark-cli api ...` |
-
-## Official workflow routing
-
-Prefer an official workflow skill when the user request matches it exactly:
-
-| User intent | Use |
-| --- | --- |
-| Summarize meetings over a time range | `lark-workflow-meeting-summary` |
-| Combine calendar agenda and incomplete tasks into a standup report | `lark-workflow-standup-report` |
-
-Do not replace an exact official workflow with a new Feishu Next skill.
 
 ## Feishu Next workflow routing
 
@@ -246,10 +318,40 @@ Use Feishu Next for the reusable, stateful workflows it explicitly owns:
 | Workflow signal | Use |
 | --- | --- |
 | Export a doc/sheet/base/slides file with artifact evidence | `$feishu-next:feishu-readonly-doc-export` |
+| Explicitly capture a viewable Slides deck through the browser into an image-based PDF | `$feishu-next:feishu-slides-preview-to-pdf` |
 | Inventory document assets or embedded resources | `$feishu-next:feishu-doc-asset-map` |
 | Archive IM history with pagination/evidence | `$feishu-next:feishu-im-chat-archive` |
+| Design whiteboards in the Semantic Card Diagrams style with semantic colors and modular cards | `$feishu-next:feishu-whiteboard-semantic-cards` |
 | Modify, redraw, recover, or validate a whiteboard | `$feishu-next:feishu-whiteboard-ops` |
 | Publish/sync `.drawio` or diagrams.net to a Feishu whiteboard | `$feishu-next:feishu-whiteboard-ops` |
+| Apply a reference or explicit style rules while preserving text | `$feishu-next:feishu-doc-format-align` |
+| Diagnose and repair heading/material-boundary damage or confirmed paste residue | `$feishu-next:feishu-doc-format-repair` |
+| Update an existing Mindnote outline and parent relationships | `$feishu-next:feishu-mindnote-outline` |
+| Maintain weekly/monthly Base snapshots and comparison batches | `$feishu-next:feishu-base-snapshot-maintain` |
+
+For a whiteboard redraw that needs visual decisions, design first, then pass
+the inspected source and preview to whiteboard-ops for the authorized remote
+change. Simple text/color edits and recovery can stay in ops. Neither playbook
+redispatches itself through Router.
+
+For a vague request such as “格式乱了”, inspect the symptoms before choosing
+between alignment and repair. Known style rules select align; damaged heading
+relationships, material boundaries or pasted content select repair, including
+single-source content. When both are requested, verify repair first, then pass
+the latest snapshot, revision and block mapping to align with the valid context.
+Each workflow carries its own complete editing and verification rules.
+
+Only publish workflows with Feishu-specific, reusable execution value beyond
+an organization's policy or template. Business reports, job assessments,
+usage statistics and company-system integrations remain project-owned; do not
+invent a bundled workflow for them. Use an explicitly available project skill
+when appropriate, and route its atomic Feishu operations to the official runtime.
+
+The generic snapshot workflow accepts the caller's schema, period and policy
+inputs; it does not require a particular workspace, resource-map file or private
+script. A project-specific snapshot skill is a separate implementation, not an
+automatically registered alias or dependency. Missing inputs never authorize
+inventing defaults, changing schema or switching identity.
 
 ## Identity and permission reminders
 
@@ -311,6 +413,10 @@ When routing rather than executing, return:
 3. required runtime reads
 4. first safe command, usually read-only or `--dry-run`
 5. unavailable runtime capability, risk, or missing information
+
+For a composed workflow, also give the ordered steps, dependencies, per-step
+outputs/acceptance checks and write boundaries. On completion, distinguish
+verified, blocked and uncertain steps; a routed or planned step is not execution.
 
 ## Safety
 

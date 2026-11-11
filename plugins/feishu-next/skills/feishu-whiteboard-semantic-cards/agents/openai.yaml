@@ -1,0 +1,4 @@
+interface:
+  display_name: "语义卡片图解 · Feishu"
+  short_description: "用稳定的语义配色、模块化卡片与清晰的关系布局设计飞书画板。"
+  default_prompt: "Use $feishu-next:feishu-whiteboard-semantic-cards to design these materials as Semantic Card Diagrams."

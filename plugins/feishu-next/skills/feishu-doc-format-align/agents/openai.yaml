@@ -1,0 +1,8 @@
+interface:
+  display_name: "飞书文档格式对齐"
+  short_description: "Match reference styles while preserving document text."
+  brand_color: "#00B96B"
+  default_prompt: "Use $feishu-next:feishu-doc-format-align for this task; start read-only and identify the target style and scope."
+
+policy:
+  allow_implicit_invocation: true
